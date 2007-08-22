@@ -15,7 +15,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 /**
- * JVIX Java object API test
+ * JVIX Java object API test.
  * 
  * @author knoxg
  * @version $Id$

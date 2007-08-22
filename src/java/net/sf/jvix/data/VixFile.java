@@ -7,7 +7,7 @@ import java.util.List;
 import net.sf.jvix.VixVM;
 
 /** A data object to contain values return by the 
- * {@link VixVM#listDirectoryInGuest(String)} method
+ * {@link VixVM#listDirectoryInGuest(String)} method.
  *
  * @TODO separate accessor methods for fileFlags components
  *  

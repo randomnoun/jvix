@@ -1,7 +1,7 @@
 package net.sf.jvix;
 
 /**
- * Wrapper for VixHandle pointer
+ * Wrapper for VixHandle pointer.
  *
  * @version $Id$
  * @author knoxg

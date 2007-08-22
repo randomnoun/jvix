@@ -1,10 +1,6 @@
 package net.sf.jvix;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-/** OO wrapper to VIX Snapshot API
+/** Object-oriented wrapper for the VIX Snapshot API
  * 
  * @author knoxg
  * @version $Id$

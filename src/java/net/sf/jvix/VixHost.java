@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** OO wraper to VIX Host API
+/** Object-oriented wrapper for the VIX Host API
+ * 
  * @author knoxg
- *
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
+ * @version $Id$
  */
 public class VixHost {
 

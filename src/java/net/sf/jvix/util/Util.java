@@ -5,9 +5,16 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Utility methods used within the VIX API */
+/** Utility methods used within the VIX API 
+ * 
+ * @author knoxg
+ * @version $Id$
+ */
 public class Util {
 
+	/** A revision marker to be used in exception stack traces. */
+	public static final String _revision = "$Id$";
+	
 	/**
 	 * Returns a map of all constants defined in a class. This method
 	 * retrieves a list of

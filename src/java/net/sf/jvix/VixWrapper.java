@@ -7,8 +7,11 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
-/** Wrapper for native calls into the VIX API. Do not call these functions directly.
- * The vixWrapper.dll needs to be contained in a folder set by the 
+/** Wrapper for native calls into the VIX API. 
+ * 
+ * <p>Do not call these functions directly !
+ * 
+ * <p>The jvix.dll needs to be contained in a folder set by the 
  * java.library.path system property.
  * 
  * @TODO this wrapper is still missing some functions ... need to implement the rest
@@ -149,19 +152,6 @@ public class VixWrapper {
 	/** VixMsgSharedFolderOptions constant for use in {@link #VixVM_SetSharedFolderState(VixHandle, String, String, int, VixEventProc, Object)} */
 	public final static int VIX_SHAREDFOLDER_WRITE_ACCESS = 4;
 	
-	/* VixHandle
-VixHost_Connect(int apiVersion,
-                VixServiceProvider hostType,
-                const char *hostName,
-                int hostPort,
-                const char *userName,
-                const char *password,
-                VixHostOptions options,
-                VixHandle propertyListHandle,
-                VixEventProc *callbackProc,
-                void *clientData);
-    */
-    
     /** Creates a host handle.
      * 
 	<ul>
@@ -199,13 +189,6 @@ VixHost_Connect(int apiVersion,
       String hostName, int hostPort, String userName, String password, int options, 
       VixHandle propertyListHandle, VixEventProc callbackProc, Object clientData);
       
-    /*
-VixHandle
-VixVM_Open(VixHandle hostHandle,
-           const char *vmxFilePathName,
-           VixEventProc *callbackProc,
-           void *clientData);
-     */
     /** This function opens a virtual machine on the host that is identified by the hostHandle parameter and returns a context to that machine as a 
      * virtual machine handle.
 	<ul>
@@ -239,14 +222,6 @@ VixVM_Open(VixHandle hostHandle,
 	public static native VixHandle VixVM_Open(VixHandle hostHandle, String vmxFilePathName, 
 	  VixEventProc callbackProc, Object clientData);
 
-/*
- VixHandle
-VixVM_PowerOn(VixHandle vmHandle,
-              VixVMPowerOpOptions powerOnOptions,
-              VixHandle propertyListHandle,
-              VixEventProc *callbackProc,
-              void *clientData);
-*/
     /** Powers on a virtual machine
      * 
 	<ul>
@@ -274,13 +249,6 @@ VixVM_PowerOn(VixHandle vmHandle,
 	public static native VixHandle VixVM_PowerOn(VixHandle vmHandle, int powerOpOptions, 
 	  VixHandle propertyListHandle, VixEventProc callbackproc, Object clientData);
 	        
-/*
-VixHandle
-VixVM_PowerOff(VixHandle vmHandle,
-               VixVMPowerOpOptions powerOffOptions,
-               VixEventProc *callbackProc,
-               void *clientData);
- */
  	/** This function powers off a virtual machine. 
  	 * 
  	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle
@@ -292,10 +260,6 @@ VixVM_PowerOff(VixHandle vmHandle,
 	  VixEventProc callbackProc, Object clientData);
 
 
-/*
-void
-Vix_ReleaseHandle(VixHandle handle);
- */
  	/** This function decrements the reference count for a handle and destroys the handle when there are no references. 
  	 *
  	 * <p>This function decrements the reference count for a handle. You should no
@@ -928,12 +892,11 @@ Vix_ReleaseHandle(VixHandle handle);
 
 	/** Destroys the state for a particular host handle.
 	 * 
-	 * <p>all this function to disconnect the host. After you call this function the handle 
+	 * <p>Call this function to disconnect the host. After you call this function the handle 
 	 * is no longer valid and you should not use it in any Vix function. Similarly, you should 
 	 * not use any handles obtained from the host while it was connected.
 	 * 
 	 * @param hostHandle The host handle returned by VixHost_Connect().
-	 *
 	 */
 	public static native void VixHost_Disconnect(VixHandle hostHandle);
 
@@ -1004,8 +967,7 @@ Vix_ReleaseHandle(VixHandle handle);
 	 * @return An indicator of whether the job has completed.
 	 */
 	public static native boolean VixJob_CheckCompletion(VixHandle jobHandle);
-	
-	/** This function creates a directory in the guest operating system.
+		/** This function creates a directory in the guest operating system.
 	 * 
 	 * <ul><li>You must call VixVM_LoginInGuest(). before calling this function.
      * <li>If the parent directories for the specified path do not exist, this function 
@@ -1023,74 +985,298 @@ Vix_ReleaseHandle(VixHandle handle);
 	 * @param clientDataA parameter that will be passed to the callbackProc function.
 	 * 
 	 * @return A job handle that describes the state of this asynchronous operation. 
-	 *   $err. The error code returned by the operation.
 	 */
 	public static native VixHandle VixVM_CreateDirectoryInGuest(VixHandle vmHandle,
 		String pathName, VixHandle propertyListHandle, VixEventProc callbackProc,
 		Object clientData);
 	
+	/** This function creates a temporary file in the guest operating system.
+	 * 
+	 * <ul><li>You must call VixVM_LoginInGuest(). before calling this function. 
+	 * <li>The result of the call is in the property VIX_PROPERTY_JOB_RESULT_ITEM_NAME on the returning jobHandle.
+	 * </ul> 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle.
+	 * @param options Must be 0.
+	 * @param propertyListHandle Must be VIX_INVALID_HANDLE.
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientDataA parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_CreateTempFileInGuest(VixHandle vmHandle,
 		int options, VixHandle propertyListHandle, VixEventProc callbackProc,
 		Object clientData);
-	
+
+	/** This function permanently deletes a virtual machine from your host system.
+	 *
+	 * <ul><li>This function permanently deletes a virtual machine from your host system. You can accomplish the same effect by deleting all virtual machine files using the host file system. This function simplifies the task by deleting all VMware files in a single function call. This function does not delete other user files in the virtual machine folder. 
+     * <li>This function is successful only if the virtual machine is powered off or suspended. 
+     * <li>This< function is asynchronous. It uses a job handle to report when it is complete. 
+     * <li>Calling VixVM_Delete() on a virtual machine handle does not release the virtual machine handle. You still need to call Vix_ReleaseHandle() on the virtual machine handle.
+     * </ul> 
+	 *  
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle.
+	 * @param deleteOptions Must be 0.
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientDataA parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_Delete(VixHandle vmHandle, 
 	    int deleteOptions, VixEventProc callbackProc,
 		Object clientData);
 		
+	/** This function deletes a directory in the guest operating system. Any files or subdirectories in the specified directory will also be deleted.
+	 *
+	 * <ul><li>You must call VixVM_LoginInGuest() before calling this function. 
+	 * <li>Only absolute paths should be used for files in the guest; the resolution of relative paths is not specified.
+	 * </ul> 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle.
+	 * @param pathName The path to the directory to be deleted. 
+	 * @param options Must be 0.
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_DeleteDirectoryInGuest(VixHandle vmHandle,
 		String pathName, int options, VixEventProc callbackProc, Object clientData);
 
+	/** This function deletes a file in the guest operating system.
+	 *  
+	 * <ul><li>You must call VixVM_LoginInGuest(). before calling this function. 
+     * <li>Only absolute paths should be used for files in the guest; the resolution of relative paths is not specified.
+     * </ul> 
+	 *  
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param guestPathName The path to the file to be deleted.
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_DeleteFileInGuest(VixHandle vmHandle,
 		String guestPathName, VixEventProc callbackProc, Object clientData);
 		
+	/** This function tests the existence of a directory in the guest operating system.
+	 *
+	 * <ul><li>You must call VixVM_LoginInGuest(). before calling this function. 
+     * <li> The result of the call is in the property VIX_PROPERTY_JOB_RESULT_GUEST_OBJECT_EXISTS on the returning jobHandle. 
+     * <li> Only absolute paths should be used for files in the guest; the resolution of relative paths is not specified. 
+     * </ul>
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param pathName The path to the directory in the guest to be checked. 
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */ 
 	public static native VixHandle VixVM_DirectoryExistsInGuest(VixHandle vmHandle,
 		String pathName, VixEventProc callbackProc, Object clientData);
-	
+
+	/** This function tests the existence of a file in the guest operating system.
+	 * 
+	 * <ul><li>You must call VixVM_LoginInGuest(). before calling this function. 
+     * <li>The result of the call is in the property VIX_PROPERTY_JOB_RESULT_GUEST_OBJECT_EXISTS on the returning jobHandle. 
+     * <li>Only absolute paths should be used for files in the guest; the resolution of relative paths is not specified. 
+     * <li>If guestPathName exists as a file system object, but is not a normal file (e.g. it is a directory, device, UNIX domain socket, etc), then VIX_OK is returned, and VIX_PROPERTY_JOB_RESULT_GUEST_OBJECT_EXISTS is set to FALSE. 
+     * </ul>
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle.
+	 * @param guestPathName The path to the file to be tested.
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */ 
 	public static native VixHandle VixVM_FileExistsInGuest(VixHandle vmHandle,
 		String guestPathName, VixEventProc callbackProc, Object clientData);
-		
+
+	/** This function returns the number of shared folders mounted in the virtual machine. 
+	 * 
+	 * <ul><li>This function returns the number of shared folders mounted in the virtual machine referenced by 
+	 * vmHandle. 
+	 * <li>When the job is signaled, the property VIX_PROPERTY_JOB_RESULT_SHARED_FOLDER_COUNT will be available on the returned job handle 
+	 * <li>It is not necessary to call VixVM_LoginInGuest() before calling this function. 
+	 * <li>Shared folders are not supported for the following guest operating systems: Windows ME, Windows 98, Windows 95, Windows 3.x, and DOS. 
+	 * </ul>
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_GetNumSharedFolders(VixHandle vmHandle,
 	    VixEventProc callbackProc, Object clientData);
 	    
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param index
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_GetSharedFolderState(VixHandle vmHandle,
 	    int index, VixEventProc callbackProc, Object clientData);
 	
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param options
+	 * @param commandLineArgs
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_InstallTools(VixHandle vmHandle, int options,
 		String commandLineArgs, VixEventProc callbackProc, Object clientData);
 	
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param pid
+	 * @param options
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_KillProcessInGuest(VixHandle vmHandle,
 		long pid, int options, VixEventProc callbackProc, Object clientData);
 	
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param pathName
+	 * @param options
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_ListDirectoryInGuest(VixHandle vmHandle,
 	    String pathName, int options, VixEventProc callbackProc, Object clientData);
 
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param shareName
+	 * @param flags
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_RemoveSharedFolder(VixHandle vmHandle,
 		String shareName, int flags, VixEventProc callbackProc, Object clientData);
 		
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param snapshotHandle
+	 * @param options
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_RemoveSnapshot(VixHandle vmHandle,
 		VixHandle snapshotHandle, int options, VixEventProc callbackProc, Object clientData);
 	
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param oldName
+	 * @param newName
+	 * @param options
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_RenameFileInGuest(VixHandle vmHandle,
 		String oldName, String newName, int options, VixHandle propertyListHandle,
 		VixEventProc callbackProc, Object clientData);
-		
+
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param powerOnOptions
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_Reset(VixHandle vmHandle,
 		int powerOnOptions, VixEventProc callbackProc, Object clientData);
 	
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param shareName
+	 * @param hostPathName
+	 * @param flags
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_SetSharedFolderState(VixHandle vmHandle,
 	    String shareName, String hostPathName, int flags, VixEventProc callbackProc,
 	    Object clientData);
 	     
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param powerOffOptions
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_Suspend(VixHandle vmHandle,
 	    int powerOffOptions, VixEventProc callbackProc, Object clientData);
 	    
+	/**
+	 * 
+	 * @param vmHandle
+	 * @param options
+	 * @param callbackProc A callback function that will be invoked when the operation is complete.
+	 * @param clientData A parameter that will be passed to the callbackProc function.
+	 * 
+	 * @return A job handle that describes the state of this asynchronous operation.
+	 */
 	public static native VixHandle VixVM_UpgradeVirtualHardware(VixHandle vmHandle,
 		int options, VixEventProc callbackProc, Object clientData);
 		
+	/**
+	 * 
+	 * @param handle
+	 * @param propertyIds
+	 * @return
+	 */	
 	public static native List Vix_GetProperties(VixHandle handle, List propertyIds);
 	
+	/**
+	 * 
+	 * @param handle
+	 * @param propertyIds
+	 * @return
+	 */	
 	public static native List Vix_GetProperties(VixHandle handle, int[] propertyIds);
 	
+	/**
+	 * 
+	 * @param propertyId
+	 * @return
+	 */
 	public static native int Vix_GetPropertyType(int propertyId); 
 
 	/** Vix_PumpEvents is used in single threaded applications that require the Vix 
@@ -1102,14 +1288,50 @@ Vix_ReleaseHandle(VixHandle handle);
 	 */
 	public static native void Vix_PumpEvents(VixHandle handle, int options);
 	
+	/**
+	 * 
+	 * @param vixError
+	 * @param locale
+	 */
 	public static native void Vix_GetErrorText(int vixError, String locale);
 	
-	public static native List Vix_GetNthProperties(VixHandle handle, List propertyIds);
-		
-	public static native List Vix_GetNthProperties(VixHandle handle, int[] propertyIds);
-	
-	public static native int Vix_GetNumProperties(VixHandle handle, int propertyId);
+	/** Retrieves the property at a specific index in a list. You can use 
+	 * this to iterate through returned property lists.
+	 * 
+	 * @see #Vix_GetNthProperties(VixHandle, int, int[])
+	 * 
+	 * @param handle The handle of a job object, returned from any asynchronous Vix function.
+	 * @param index index into the property list of the job object.
+	 * @param propertyIds a list of property Ids
+	 * 
+	 * @return the request properties
+	 */
+	public static native List Vix_GetNthProperties(VixHandle handle, int index, List propertyIds);
 
+	/** Retrieves the property at a specific index in a list. You can use 
+	 * this to iterate through returned property lists.
+	 * 
+	 * @see #Vix_GetNthProperties(VixHandle, int, List)
+	 * 
+	 * @param handle The handle of a job object, returned from any asynchronous Vix function.
+	 * @param index index into the property list of the job object.
+	 * @param propertyIds an array of property Ids
+	 * 
+	 * @return the request properties
+	 */
+	public static native List Vix_GetNthProperties(VixHandle handle, int index, int[] propertyIds);
+
+	/** Retrieves the number of instances of the specified property. 
+	 * Used to work with returned property lists.
+	 * 
+	 * @param handle The handle of a job object, returned from any asynchronous Vix function.
+	 * @param resultPropertyId A property ID.
+	 * 
+	 * @return the number of properties with an ID of resultPropertyID.
+	 */
+	public static native int Vix_GetNumProperties(VixHandle handle, int resultPropertyId);
+
+	/* static intitialiser */
 	static {
 		System.out.println(System.getProperty("java.library.path"));
 		System.loadLibrary("jvix");
@@ -1133,6 +1355,5 @@ Vix_ReleaseHandle(VixHandle handle);
 			logger.info("jvix initialised [" + buildId + "]");
 		}
 	}
-
 
 }

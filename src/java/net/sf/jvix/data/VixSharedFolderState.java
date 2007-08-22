@@ -7,7 +7,7 @@ import java.util.List;
 import net.sf.jvix.VixVM;
 
 /** A data object to contain values return by the 
- * {@link VixVM#getSharedFolderState(int)} method
+ * {@link VixVM#getSharedFolderState(int)} method.
  *
  * @author knoxg
  * @version $Id$

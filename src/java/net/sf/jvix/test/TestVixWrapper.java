@@ -14,7 +14,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 /**
- * JVIX Wrapper API test
+ * JVIX Wrapper API test.
  * 
  * @author knoxg
  * @version $Id$

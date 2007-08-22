@@ -7,7 +7,7 @@ import java.util.Map;
 import net.sf.jvix.util.Util;
 
 /**
- * Exception class used to indicate error conditions returned by the VIX API
+ * Exception class used to indicate error conditions returned by the VIX API.
  * 
  * @author knoxg
  * @version $Id$

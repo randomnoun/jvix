@@ -8,11 +8,10 @@ import net.sf.jvix.data.VixFile;
 import net.sf.jvix.data.VixProcess;
 import net.sf.jvix.data.VixSharedFolderState;
 
-/** OO wraper to VIX Host API
+/** Object-oriented wrapper for the VIX virtual machine API
+ * 
  * @author knoxg
- *
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
+ * @version $Id$
  */
 public class VixVM {
 
@@ -245,7 +244,7 @@ public class VixVM {
 			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_FILE_FLAGS));
 			List directories = new ArrayList();
 			for (int i=0; i<num; i++) {
-				List fileResult = VixWrapper.Vix_GetNthProperties(jobHandle, nthPropertyList);
+				List fileResult = VixWrapper.Vix_GetNthProperties(jobHandle, i, nthPropertyList);
 				directories.add(new VixFile(
 				  (String) fileResult.get(0), 
 				  ((Integer) fileResult.get(1)).intValue()
@@ -271,7 +270,7 @@ public class VixVM {
 			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_PROCESS_COMMAND));
 			List processes = new ArrayList();
 			for (int i=0; i<num; i++) {
-				List processResult = VixWrapper.Vix_GetNthProperties(jobHandle, nthPropertyList);
+				List processResult = VixWrapper.Vix_GetNthProperties(jobHandle, i, nthPropertyList);
 				processes.add(new VixProcess(
 				  (String) processResult.get(0), 
 				  ((Long) processResult.get(1)).longValue(),
