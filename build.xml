@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="all">
+
+    <!--
+      Ant build settings
+      ==================
+       
+      If you are working on this in a team environment, you may wish
+      to create a file in the src/resources/properties folder with a filename
+      set to "computerName-userName.properties". Any properties 
+      specified in this file will be specific to your computer/user
+      combination, and will therefore not impact other developers.
+      
+      If you're the only person who will be looking at this,
+      then you can modify this file directly.
+      
+      Properties you may wish to modify:
+      
+        jdkDir:    location of a Java JDK
+                   required for JNI includes; 
+                   defaults to "C:/Java/j2sdk1.4.2_15" )
+      
+        vixDir:    location of the VIX directory
+                   defaults to "C:/Program Files/VMware/VMware VIX"
+        
+        cygwinDir: location of cygwin (for gcc etc)
+                   defaults to "C:/cygwin"
+        
+      Feel free to override any others.
+      
+   -->
+          
+	<!-- environment imports -->
+    <property environment="env"/>
+
+	<!-- per-user properties must be specified *before* other properties -->
+    <property file="src/resources/properties/${env.COMPUTERNAME}-${user.name}.properties" />
+
+    <!-- deployment imports (override in ../src/ant-properties folder) -->
+    <property name="windowsDir" value="C:/WINDOWS" />
+    <property name="cygwinInstallDir" value="C:\cygwin"/>
+    <property name="vixDir" value="C:/Program Files/VMware/VMware VIX" />
+	<property name="jdkDir" value="C:/Java/j2sdk1.4.2_15" />
+
+    <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc"/>
+    <property name="bin.bash" value="${cygwinInstallDir}/bin/bash"/>
+	
+	
+    <property name="bin.swig" value="${cygwinInstallDir}/usr/local/bin/swig"/>    
+	
+	<property name="currentDir" value="${user.dir}" />
+	<property name="increaseBuildNumber" value="false" />
+	
+	<!--
+	<property name="pluginDir" value="${user.dir}/eclipse/plugins" />
+    -->	
+
+	<path id="classpath.build.target"   location="build/class" />
+	<path id="classpath.compile.lib">
+	  <fileset dir="lib/compile" includes="*.jar" />
+	</path>
+	<path id="classpath.runtime.lib">
+	  <fileset dir="lib/runtime" includes="*.jar" />
+	</path>
+	
+    <path id="classpath.all.lib">
+      <path refid="classpath.compile.lib" />
+      <path refid="classpath.runtime.lib" />
+    </path>
+    <path id="classpath.run">
+      <path refid="classpath.runtime.lib" />
+      <path refid="classpath.build.target" />
+    </path>
+    
+    <path id="classpath.javac">
+      <fileset dir="${jdkDir}/jre/lib">
+        <include name="*.jar"/>
+      </fileset>
+    </path>
+
+    <!--
+      **********************************************************************
+      * target section
+      *
+      -->
+
+	<target name="all" description="Complete build"
+		depends="buildVixWrapper, buildJvixJar" >
+		
+	</target>
+	
+	<target name="_init" description="Create directories required by other targets">
+	  <echo message="Creating build directory structure ..."/>
+	  <mkdir dir="build/class" />
+      <mkdir dir="build/dll" />
+	  <mkdir dir="build/h" />
+	  <mkdir dir="build/jar" />
+	  <mkdir dir="build/jni" />
+	  <mkdir dir="build/javadoc" />
+	</target>
+	
+	<condition property="testIncreaseBuildNumber">
+		<equals arg1="${increaseBuildNumber}" arg2="true" />
+	</condition>
+	<target name="_increaseBuildNumber" description="Increase build number; only run this on the main build machine" unless="testIncreaseBuildNumber">
+	  <echo message="Increasing build number"/>
+      <java classname="net.sf.jvix.util.IncreaseBuildNumber" 
+         fork="true" 
+         dir="."
+         jvm="${jdkDir}/bin/java"
+         failonerror = "true"
+      >
+        <classpath>
+          <path refid="classpath.all.lib" />
+          <path location="build/class" />
+        </classpath> 
+        <arg value="--jdbcUrl" />
+        <arg value="${buildDatabase.jdbcUrl}" />
+        <arg value="--username" />
+        <arg value="${buildDatabase.username}" />
+        <arg value="--password" />
+        <arg value="${buildDatabase.password}" />
+        <arg value="--product" />
+        <arg value="jvix" />
+        <arg value="--release" />
+        <arg value="0.1" />
+        <arg value="--baseDir" />
+        <arg value="." />
+        <arg value="--source" />
+        <arg value="src/java" />
+        <arg value="--source2" />
+        <arg value="src/c" />
+        <arg value="--file" />
+        <arg value="src/resources/jvixBuild.properties" />
+      </java>
+	</target>
+    
+    <target name="buildClasses" depends="_init" description="Compiles all java source into the build/class directory">
+      <javac 
+         destdir="build/class"
+ 	     compiler="classic"
+	     bootclasspathref="classpath.javac"
+	     debug="on"
+      >
+        <classpath refid="classpath.all.lib" />
+        <src path="src/java" />
+        <include name="net/sf/jvix/**"/>
+      </javac>
+    	
+      <!-- can comment this out if not running within eclipse -->
+	  <!-- <eclipse.refreshLocal resource="jvix" /> -->
+
+    </target>
+    
+    <target name="buildJvixJar" depends="_init, buildClasses" description="Create the jvix.jar" >
+      <!-- if we start i18n'ing things later 
+      <echo message="Copying src/*.txt" />
+	  <copy todir="build/class">
+	      <fileset dir="src/java" includes="**/*.txt" />
+	  </copy>
+	  -->
+      <echo message="Generating .jar file" />
+      <antcall target="_increaseBuildNumber" />
+	  <jar jarfile="build/jar/jvix.jar" basedir="build/class" />
+    </target>
+
+    <target name="clean" description="Clean out the ./build directories">
+        <delete dir="build/class" />
+        <delete dir="build/dll" />
+    	<delete dir="build/h" />
+    	<delete dir="build/jar" />
+    	<delete dir="build/jni" />
+    	<delete dir="build/javadoc" />
+    </target>
+
+
+	<target name="buildVixWrapper" depends="_init" description="Create VIX JNI wrapper">
+      <!-- would be good to statically compile these once I google how to do it -->
+	  <copy file="${vixDir}/ws-2/32bit/iconv.dll" tofile="build/jni/iconv.dll"/>
+	  <copy file="${vixDir}/ws-2/32bit/libeay32.dll" tofile="build/jni/libeay32.dll"/>
+	  <copy file="${vixDir}/ws-2/32bit/libxml2.dll" tofile="build/jni/libxml2.dll"/>
+	  <copy file="${vixDir}/ws-2/32bit/ssleay32.dll" tofile="build/jni/ssleay32.dll"/>	  
+	  <copy file="${vixDir}/ws-2/32bit/vix.dll" tofile="build/jni/vix.dll"/>
+	  <copy file="${vixDir}/ws-2/32bit/vmcryptolib.dll" tofile="build/jni/vmcryptolib.dll"/>
+	  <copy file="${vixDir}/ws-2/32bit/zlib1.dll" tofile="build/jni/zlib1.dll"/>
+	  <copy file="${vixDir}/ws-2/32bit/vix.lib" tofile="build/jni/vix.lib"/>
+	  <copy file="${vixDir}/ws-2/32bit/fipsSigs.dat" tofile="build/jni/fipsSigs.dat"/>
+	  <exec executable="${jdkDir}\bin\javah" >
+  	    <arg value="-classpath" />
+  	    <arg value="build/class" />
+	    <arg value="-o" />
+	    <arg value="build/h/VixWrapper.h" />
+	    <arg value="net.sf.jvix.VixWrapper" />
+      </exec>
+	  <exec executable="${bin.gcc}" 
+        dir="build/jni" >
+	    <arg value="-v" />
+	    <arg value="-mno-cygwin" />
+	    <arg value="-I../h" />
+	    <arg value="-I${jdkDir}/include" />
+	  	<arg value="-I${jdkDir}/include/win32" />
+	    <arg value="-I${vixDir}" /> 
+	    <arg value="-L${vixDir}/ws-2/32bit" />	    
+	    <arg value="-Wl,--add-stdcall-alias" />
+	    <arg value="-shared" />
+	    <arg value="-D_M_IX86" />
+	    <arg value="-DNT" />
+	    <arg value="-o" />
+	    <arg value="jvix.dll" />
+	    <arg value="../../src/c/VixWrapper.c" />
+	    <arg value="${vixDir}/ws-2/32bit/vix.dll" />
+	  </exec>
+	  <copy file="build/jni/jvix.dll" tofile="build/dll/jvix.dll"/>
+	</target>
+
+
+    <!-- additionalparam="-J-Xss20M -J-Xmx128M" -->
+	<target name="javadoc" depends="_init" description="Runs the standard java doclet over the Java source code">
+		<!-- stylesheetfile="src/resources/doclet\doc-files\stylesheet.css" -->
+		<javadoc access="public"
+            destdir="build/javadoc"
+            additionalparam="-breakiterator "
+            sourcepath="src/java"
+          >
+          <classpath refid="classpath.all.lib" />
+          <packageset dir="src/java" >
+             <include name="net/sf/jvix/**/*" />
+          </packageset>
+        </javadoc>
+    </target>
+	
+	<target name="statcvs" depends="_init" description="Generate statistics this project.">
+	  <echo message="Generating CVS statistics" />
+	  <exec executable="${bin.bash}" >
+	    <arg value="-c" />
+	    <arg value="src/sh/statcvs.sh" />
+	  </exec>
+	  <echo message="Refreshing project" />
+	  <!-- doesn't work in Eclipse Europa (v3.3.0)
+	  <eclipse.refreshLocal resource="jvix" />
+	  -->
+	</target>
+	
+	
+	
+</project>
