@@ -1113,10 +1113,20 @@ public class VixWrapper {
 	public static native VixHandle VixVM_GetNumSharedFolders(VixHandle vmHandle,
 	    VixEventProc callbackProc, Object clientData);
 	    
-	/**
+	/** This function returns the state of a shared folder mounted in the virtual machine. 
 	 * 
-	 * @param vmHandle
-	 * @param index
+	 * <ul>Shared folders are indexed from 0 to n-1, where n is the number of shared folders. Use the function VixVM_GetNumSharedFolders() to get the value of n. 
+	 * <li>When the job is signaled, the following properties will be available on the returned job handle: 
+	 * <ul><li>VIX_PROPERTY_JOB_RESULT_ITEM_NAME the name of the folder 
+	 * <li>VIX_PROPERTY_JOB_RESULT_SHARED_FOLDER_HOST the host path its mounted from 
+	 * <li>VIX_PROPERTY_JOB_RESULT_SHARED_FOLDER_FLAGS flags describing the folder options VIX_SHAREDFOLDER_WRITE_ACCESS
+	 * </ul> 
+	 * <li>It is not necessary to call VixVM_LoginInGuest() before calling this function. 
+	 * <li>Shared folders are not supported for the following guest operating systems: Windows ME, Windows 98, Windows 95, Windows 3.x, and DOS.
+	 * </ul> 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle.
+	 * @param index Identifies the shared folder.
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1125,11 +1135,15 @@ public class VixWrapper {
 	public static native VixHandle VixVM_GetSharedFolderState(VixHandle vmHandle,
 	    int index, VixEventProc callbackProc, Object clientData);
 	
-	/**
+	/** Installs VMware Tools on the guest operating system.
 	 * 
-	 * @param vmHandle
-	 * @param options
-	 * @param commandLineArgs
+	 * <ul><li>Installs VMware Tools on the guest operating system. If VMware Tools is already installed, this function upgrades VMware Tools to the version that matches the Vix library. 
+	 * <li>The virtual machine must be powered on to do this operation.
+	 * </ul> 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param options Must be 0. 
+	 * @param commandLineArgs Must be null.
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1138,11 +1152,14 @@ public class VixWrapper {
 	public static native VixHandle VixVM_InstallTools(VixHandle vmHandle, int options,
 		String commandLineArgs, VixEventProc callbackProc, Object clientData);
 	
-	/**
+	/** This function terminates a process in the guest operating system. 
 	 * 
-	 * @param vmHandle
-	 * @param pid
-	 * @param options
+	 * <ul><li>You must call VixVM_LoginInGuest(). before calling this function. 
+	 * </ul>
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle.
+	 * @param pid The ID of the process to be killed. 
+	 * @param options Must be 0.
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1151,11 +1168,21 @@ public class VixWrapper {
 	public static native VixHandle VixVM_KillProcessInGuest(VixHandle vmHandle,
 		long pid, int options, VixEventProc callbackProc, Object clientData);
 	
-	/**
+	/** This function lists a directory in the guest operating system. 
 	 * 
-	 * @param vmHandle
-	 * @param pathName
-	 * @param options
+	 * <ul><li>You must call VixVM_LoginInGuest(). before calling this function. 
+	 * <li>VixJob_GetNumProperties() should be used to determine the number of results 
+	 * <li>VixJob_GetNthProperties() can be used to get each result 
+	 * <li>When the job is signaled, the following list of properties will be available on the returned job handle: 
+	 * <ul><li>VIX_PROPERTY_JOB_RESULT_ITEM_NAME: the file name 
+	 * <li>VIX_PROPERTY_JOB_RESULT_FILE_FLAGS: file attribute flags
+	 * </ul> 
+	 * <li>Only absolute paths should be used for files in the guest; the resolution of relative paths is not specified.
+	 * </ul> 
+	 *  
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param pathName The path name of a directory to be listed. 
+	 * @param options Must be 0. 
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1164,11 +1191,16 @@ public class VixWrapper {
 	public static native VixHandle VixVM_ListDirectoryInGuest(VixHandle vmHandle,
 	    String pathName, int options, VixEventProc callbackProc, Object clientData);
 
-	/**
+	/** This function removes a shared folder in the virtual machine.
 	 * 
-	 * @param vmHandle
-	 * @param shareName
-	 * @param flags
+	 * <ul><li>This function removes a shared folder in the virtual machine referenced by vmHandle. 
+	 * <li>It is not necessary to call VixVM_LoginInGuest() before calling this function. 
+	 * <li>Shared folders are not supported for the following guest operating systems: Windows ME, Windows 98, Windows 95, Windows 3.x, and DOS.
+	 * </ul> 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle.
+	 * @param shareName Specifies the guest pathname of the shared folder to delete. 
+	 * @param flags Must be 0. 
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1177,11 +1209,18 @@ public class VixWrapper {
 	public static native VixHandle VixVM_RemoveSharedFolder(VixHandle vmHandle,
 		String shareName, int flags, VixEventProc callbackProc, Object clientData);
 		
-	/**
+	/** This function deletes all saved states for the specified snapshot
 	 * 
-	 * @param vmHandle
-	 * @param snapshotHandle
-	 * @param options
+	 * <ul><li>This function deletes all saved states for the specified snapshot. If the snapshot was based on another snapshot, the base snapshot becomes the new root snapshot. 
+     * <li>A snapshot can be removed only while the associated virtual machine is powered off or suspended. 
+     * <li>The Server 1.0 release of the VIX API can manage only a single snapshot for each virtual machine. A virtual machine imported from another VMware product can have more than one snapshot at the time it is imported. In that case, you can delete only a snapshot subsequently added using the VIX API.
+     * </ul>
+     * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle
+	 * @param snapshotHandle A handle to a snapshot. Call VixVM_GetRootSnapshot() to get a snapshot handle
+	 * @param options Flags to specify optional behavior. Any combination of the following or 0: 
+	 *  <ul><li>VIX_SNAPSHOT_REMOVE_CHILDREN - Remove snapshots that are children of the given snapshot.
+	 *  </ul> 
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1190,12 +1229,17 @@ public class VixWrapper {
 	public static native VixHandle VixVM_RemoveSnapshot(VixHandle vmHandle,
 		VixHandle snapshotHandle, int options, VixEventProc callbackProc, Object clientData);
 	
-	/**
+	/** This function renames a file or directory in the guest operating system
 	 * 
-	 * @param vmHandle
-	 * @param oldName
-	 * @param newName
-	 * @param options
+	 * <ul><li>You must call VixVM_LoginInGuest() before calling this function. 
+     * <li>Only absolute paths should be used for files in the guest; the resolution of relative paths is not specified.
+     * </ul> 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param oldName The path to the file to be renamed. 
+	 * @param newName The path to the new file. 
+	 * @param options Must be 0
+	 * @param propertyListHandle Must be VIX_INVALID_HANDLE. 
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1205,10 +1249,14 @@ public class VixWrapper {
 		String oldName, String newName, int options, VixHandle propertyListHandle,
 		VixEventProc callbackProc, Object clientData);
 
-	/**
+	/** This function resets a virtual machine, which is the equivalent of pressing the reset button on a physical machine
 	 * 
-	 * @param vmHandle
-	 * @param powerOnOptions
+	 * <p>The reset is an asynchronous operation, and the job will be signalled when the operation 
+	 * completes. If the virtual machine is not powered on when you call 
+	 * this function, it returns an error. 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param powerOnOptions Must be VIX_VMPOWEROP_NORMAL. 
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1217,12 +1265,18 @@ public class VixWrapper {
 	public static native VixHandle VixVM_Reset(VixHandle vmHandle,
 		int powerOnOptions, VixEventProc callbackProc, Object clientData);
 	
-	/**
+	/** This function modifies the state of a shared folder mounted in the virtual machine.
 	 * 
-	 * @param vmHandle
-	 * @param shareName
-	 * @param hostPathName
-	 * @param flags
+	 * <ul><li>This function modifies the state flags of an existing shared folder. 
+	 * <li>If the shared folder specified by shareName does not exist before calling this function, the job handle for this function will return VIX_E_NOT_FOUND. 
+	 * <li>It is not necessary to call VixVM_LoginInGuest() before calling this function. 
+	 * <li>Shared folders are not supported for the following guest operating systems: Windows ME, Windows 98, Windows 95, Windows 3.x, and DOS.
+	 * </ul> 
+	 *  
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param shareName Specifies the name of the shared folder
+	 * @param hostPathName Specifies the host path of the shared folder. 
+	 * @param flags The new flag settings. 
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1232,10 +1286,14 @@ public class VixWrapper {
 	    String shareName, String hostPathName, int flags, VixEventProc callbackProc,
 	    Object clientData);
 	     
-	/**
+	/** This function suspends a virtual machine.
 	 * 
-	 * @param vmHandle
-	 * @param powerOffOptions
+	 * <p>It is an asynchronous operation, and the job will be signaled when 
+	 * the operation completes. If the virtual machine is not powered on when you 
+	 * call this function, the function returns an error. 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param powerOffOptions Must be 0.
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1244,10 +1302,16 @@ public class VixWrapper {
 	public static native VixHandle VixVM_Suspend(VixHandle vmHandle,
 	    int powerOffOptions, VixEventProc callbackProc, Object clientData);
 	    
-	/**
+	/** Upgrades the virtual hardware version of the virtual machine to match 
+	 * the version of the VIX library. This has no effect if the virtual machine 
+	 * is already at the same version or at a newer version than the VIX library. 
 	 * 
-	 * @param vmHandle
-	 * @param options
+	 * <ul><li>The virtual machine must be powered off to do this operation. 
+	 * <li>When the VM is already up-to-date, the job handle for this function will return VIX_E_VM_ALREADY_UP_TO_DATE.
+	 * </ul> 
+	 * 
+	 * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
+	 * @param options Must be 0.
 	 * @param callbackProc A callback function that will be invoked when the operation is complete.
 	 * @param clientData A parameter that will be passed to the callbackProc function.
 	 * 
@@ -1256,28 +1320,53 @@ public class VixWrapper {
 	public static native VixHandle VixVM_UpgradeVirtualHardware(VixHandle vmHandle,
 		int options, VixEventProc callbackProc, Object clientData);
 		
-	/**
+	/** This function allows you to get one or more properties from a handle. 
 	 * 
-	 * @param handle
-	 * @param propertyIds
-	 * @return
+	 * <ul><li>This function allows you to get one or more properties from a handle. You may use this function on any type of handle, but only specific properties are defined for each handle. 
+	 * <li>This procedure accepts a variable number of parameters, so you can retrieve any number of properties with a single call. The parameters must be in a series of pairs of property IDs and result pointers. Each result pointer will accept the value of the property identified by the property ID in the previous parameter. The type of the pointer depends on the type of the property. You end the variable list of parameters with a single ID value of VIX_PROPERTY_NONE. 
+	 * <li>When Vix_GetProperties() returns an error, the values of the output parameters are indeterminate. 
+	 * <li>If you retrieve a string property, the Programming API allocates space for that string. You are responsible for calling Vix_FreeBuffer() to free the string. 
+	 * <li>The value of VIX_PROPERTY_VM_TOOLS_STATE is valid only after calling VixVM_WaitForToolsInGuest().
+	 * </ul>
+	 * 
+	 * @see #Vix_GetProperties(VixHandle, int[])
+	 * 
+	 * @param handle Any handle returned by a Vix function. 
+	 * @param propertyIds A list of property IDs. See above for valid values.
+	 *  
+	 * @return the List of properties requested
 	 */	
 	public static native List Vix_GetProperties(VixHandle handle, List propertyIds);
 	
-	/**
+	/** This function allows you to get one or more properties from a handle. 
 	 * 
-	 * @param handle
-	 * @param propertyIds
-	 * @return
-	 */	
+	 * <ul><li>This function allows you to get one or more properties from a handle. You may use this function on any type of handle, but only specific properties are defined for each handle. 
+	 * <li>This procedure accepts a variable number of parameters, so you can retrieve any number of properties with a single call. The parameters must be in a series of pairs of property IDs and result pointers. Each result pointer will accept the value of the property identified by the property ID in the previous parameter. The type of the pointer depends on the type of the property. You end the variable list of parameters with a single ID value of VIX_PROPERTY_NONE. 
+	 * <li>When Vix_GetProperties() returns an error, the values of the output parameters are indeterminate. 
+	 * <li>If you retrieve a string property, the Programming API allocates space for that string. You are responsible for calling Vix_FreeBuffer() to free the string. 
+	 * <li>The value of VIX_PROPERTY_VM_TOOLS_STATE is valid only after calling VixVM_WaitForToolsInGuest().
+	 * </ul>
+	 * 
+	 * @see #Vix_GetProperties(VixHandle, List)
+	 * 
+	 * @param handle Any handle returned by a Vix function. 
+	 * @param propertyIds An array of property IDs. See above for valid values.
+	 *  
+	 * @return the List of properties requested
+	 */
 	public static native List Vix_GetProperties(VixHandle handle, int[] propertyIds);
 	
-	/**
+	/** Given a property ID, this function returns the type of that property. 
 	 * 
-	 * @param propertyId
-	 * @return
+	 * For a list of property data types, refer to the 
+	 * Types Reference topic.
+	 * 
+	 * @param handle Any handle returned by a VIX function
+	 * @param propertyId A property ID. See below for valid values. 
+	 *
+	 * @return The type of the data stored by the property
 	 */
-	public static native int Vix_GetPropertyType(int propertyId); 
+	public static native int Vix_GetPropertyType(VixHandle handle, int propertyId); 
 
 	/** Vix_PumpEvents is used in single threaded applications that require the Vix 
 	 * library to be single threaded. Tasks that would normally be executed in a 
@@ -1288,10 +1377,10 @@ public class VixWrapper {
 	 */
 	public static native void Vix_PumpEvents(VixHandle handle, int options);
 	
-	/**
+	/** Returns a human-readable string that describes the error. 
 	 * 
-	 * @param vixError
-	 * @param locale
+	 * @param vixError A Vix error code returned by any other Vix function
+	 * @param locale Must be NULL.
 	 */
 	public static native void Vix_GetErrorText(int vixError, String locale);
 	
