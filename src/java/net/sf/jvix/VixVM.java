@@ -49,7 +49,7 @@ public class VixVM {
 
 	public void copyFileFromHostToGuest(String hostPathName, String guestPathName) throws VixException
 	{
-		VixHandle jobHandle = VixWrapper.VixVM_CopyFileFromGuestToHost(vmHandle, 
+		VixHandle jobHandle = VixWrapper.VixVM_CopyFileFromHostToGuest(vmHandle, 
 		  hostPathName, guestPathName, 0, new VixHandle(VixWrapper.VIX_INVALID_HANDLE), null, null);
 		try {
 			List result = VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);
@@ -111,13 +111,25 @@ public class VixVM {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);
 		}
 	}
+
+	public void deleteFileInGuest(String guestPathName) throws VixException
+	{
+		VixHandle jobHandle = VixWrapper.VixVM_DeleteFileInGuest(vmHandle, 
+		  guestPathName, null, null);
+		try {
+			List result = VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);
+		} finally {
+			VixWrapper.Vix_ReleaseHandle(jobHandle);
+		}
+	}
+
 	
 	public boolean directoryExistsInGuest(String pathName) throws VixException
 	{
 		VixHandle jobHandle = VixWrapper.VixVM_DirectoryExistsInGuest(vmHandle, 
 		  pathName, null, null);
 		List jobWaitProperties = new ArrayList();
-		jobWaitProperties.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_ITEM_NAME)); 
+		jobWaitProperties.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_GUEST_OBJECT_EXISTS)); 
 		try {
 			List result = VixWrapper.VixJob_Wait(jobHandle, jobWaitProperties);
 			return ((Boolean) result.get(0)).booleanValue();
@@ -145,6 +157,7 @@ public class VixVM {
 		jobWaitProperties.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_GUEST_OBJECT_EXISTS)); 
 		try {
 			List result = VixWrapper.VixJob_Wait(jobHandle, jobWaitProperties);
+			
 			return ((Boolean) result.get(0)).booleanValue();
 		} finally {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);
@@ -238,13 +251,13 @@ public class VixVM {
 		  pathName, 0, null, null);
 		try {
 			List result = VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);
-			int num = VixWrapper.Vix_GetNumProperties(jobHandle, VixWrapper.VIX_PROPERTY_JOB_RESULT_ITEM_NAME);
+			int num = VixWrapper.VixJob_GetNumProperties(jobHandle, VixWrapper.VIX_PROPERTY_JOB_RESULT_ITEM_NAME);
 			List nthPropertyList = new ArrayList();
 			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_ITEM_NAME));
 			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_FILE_FLAGS));
 			List directories = new ArrayList();
 			for (int i=0; i<num; i++) {
-				List fileResult = VixWrapper.Vix_GetNthProperties(jobHandle, i, nthPropertyList);
+				List fileResult = VixWrapper.VixJob_GetNthProperties(jobHandle, i, nthPropertyList);
 				directories.add(new VixFile(
 				  (String) fileResult.get(0), 
 				  ((Integer) fileResult.get(1)).intValue()
@@ -262,7 +275,7 @@ public class VixVM {
 		  0, null, null);
 		try {
 			List result = VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);
-			int num = VixWrapper.Vix_GetNumProperties(jobHandle, VixWrapper.VIX_PROPERTY_JOB_RESULT_ITEM_NAME);
+			int num = VixWrapper.VixJob_GetNumProperties(jobHandle, VixWrapper.VIX_PROPERTY_JOB_RESULT_ITEM_NAME);
 			List nthPropertyList = new ArrayList();
 			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_ITEM_NAME));
 			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_PROCESS_ID));
@@ -270,7 +283,7 @@ public class VixVM {
 			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_PROCESS_COMMAND));
 			List processes = new ArrayList();
 			for (int i=0; i<num; i++) {
-				List processResult = VixWrapper.Vix_GetNthProperties(jobHandle, i, nthPropertyList);
+				List processResult = VixWrapper.VixJob_GetNthProperties(jobHandle, i, nthPropertyList);
 				processes.add(new VixProcess(
 				  (String) processResult.get(0), 
 				  ((Long) processResult.get(1)).longValue(),
@@ -293,7 +306,7 @@ public class VixVM {
 		}
 	}
 
-	public void logoutFromGuest(String username, String password) throws VixException {
+	public void logoutFromGuest() throws VixException {
 		VixHandle jobHandle = VixWrapper.VixVM_LogoutFromGuest(vmHandle, null, null);
 		try {
 			List result = VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);

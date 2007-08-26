@@ -20,4 +20,15 @@ public class VixHandle {
 	public VixHandle(int value) {
 		this.value = value;
 	}
+	
+	/** Tests for equality 
+	 * 
+	 * @param other other object
+	 * 
+	 */
+	public boolean equals(Object other) {
+		if (other==null) { return false; }
+		if (! (other instanceof VixHandle)) { return false; }
+		return value == ((VixHandle) other).value;
+	}
 }

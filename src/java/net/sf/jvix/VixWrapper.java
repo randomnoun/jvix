@@ -2,6 +2,7 @@ package net.sf.jvix;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -291,7 +292,13 @@ public class VixWrapper {
 	 * 
 	 * @throws VixException if the job did not return VIX_OK
 	 */	
-	public static native List VixJob_Wait(VixHandle jobHandle, int[] propertyIds) throws VixException;
+	public static List VixJob_Wait(VixHandle jobHandle, int[] propertyIds) throws VixException {
+		List newList = new ArrayList(propertyIds.length);
+		for (int i=0; i<propertyIds.length; i++) {
+			newList.add(new Integer(propertyIds[i]));
+		}
+		return VixJob_Wait(jobHandle, newList);
+	}
 	
 
 	/** This function mounts a new shared folder in the virtual machine. 
@@ -1354,7 +1361,13 @@ public class VixWrapper {
 	 *  
 	 * @return the List of properties requested
 	 */
-	public static native List Vix_GetProperties(VixHandle handle, int[] propertyIds);
+	public static List Vix_GetProperties(VixHandle handle, int[] propertyIds) {
+		List newList = new ArrayList(propertyIds.length);
+		for (int i=0; i<propertyIds.length; i++) {
+			newList.add(new Integer(propertyIds[i]));
+		}
+		return Vix_GetProperties(handle, newList);
+	}
 	
 	/** Given a property ID, this function returns the type of that property. 
 	 * 
@@ -1387,7 +1400,7 @@ public class VixWrapper {
 	/** Retrieves the property at a specific index in a list. You can use 
 	 * this to iterate through returned property lists.
 	 * 
-	 * @see #Vix_GetNthProperties(VixHandle, int, int[])
+	 * @see #k_GetNthProperties(VixHandle, int, int[])
 	 * 
 	 * @param handle The handle of a job object, returned from any asynchronous Vix function.
 	 * @param index index into the property list of the job object.
@@ -1395,12 +1408,12 @@ public class VixWrapper {
 	 * 
 	 * @return the request properties
 	 */
-	public static native List Vix_GetNthProperties(VixHandle handle, int index, List propertyIds);
+	public static native List VixJob_GetNthProperties(VixHandle handle, int index, List propertyIds);
 
 	/** Retrieves the property at a specific index in a list. You can use 
 	 * this to iterate through returned property lists.
 	 * 
-	 * @see #Vix_GetNthProperties(VixHandle, int, List)
+	 * @see #VixJob_GetNthProperties(VixHandle, int, List)
 	 * 
 	 * @param handle The handle of a job object, returned from any asynchronous Vix function.
 	 * @param index index into the property list of the job object.
@@ -1408,7 +1421,13 @@ public class VixWrapper {
 	 * 
 	 * @return the request properties
 	 */
-	public static native List Vix_GetNthProperties(VixHandle handle, int index, int[] propertyIds);
+	public static List VixJob_GetNthProperties(VixHandle handle, int index, int[] propertyIds) {
+		List newList = new ArrayList(propertyIds.length);
+		for (int i=0; i<propertyIds.length; i++) {
+			newList.add(new Integer(propertyIds[i]));
+		}
+		return VixJob_GetNthProperties(handle, index, newList);
+	}
 
 	/** Retrieves the number of instances of the specified property. 
 	 * Used to work with returned property lists.
@@ -1418,7 +1437,7 @@ public class VixWrapper {
 	 * 
 	 * @return the number of properties with an ID of resultPropertyID.
 	 */
-	public static native int Vix_GetNumProperties(VixHandle handle, int resultPropertyId);
+	public static native int VixJob_GetNumProperties(VixHandle handle, int resultPropertyId);
 
 	/* static intitialiser */
 	static {
@@ -1426,9 +1445,9 @@ public class VixWrapper {
 		System.loadLibrary("jvix");
 		String buildId = "(custom build)";
 		ClassLoader classLoader = VixWrapper.class.getClassLoader();
-		InputStream is = classLoader.getResourceAsStream("./resources/jvixBuild.properties");
+		InputStream is = classLoader.getResourceAsStream("./jvixBuild.properties");
 		if (is==null) {
-			is = classLoader.getResourceAsStream("/resources/jvixBuild.properties");
+			is = classLoader.getResourceAsStream("/jvixBuild.properties");
 		}
 		if (is!=null) {
 			Properties props = new Properties();
@@ -1439,10 +1458,8 @@ public class VixWrapper {
 				// ignore exceptions
 			}
 		}
-		if (is==null) {
-			Logger logger = Logger.getLogger(VixWrapper.class);
-			logger.info("jvix initialised [" + buildId + "]");
-		}
+		Logger logger = Logger.getLogger(VixWrapper.class);
+		logger.info("jvix initialised [" + buildId + "]");
 	}
 
 }

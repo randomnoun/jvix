@@ -120,15 +120,16 @@ public class VixException extends Exception {
 	public final static int VIX_E_SNAPSHOT_INDEPENDENTDISK               = 13016;
 	public final static int VIX_E_SNAPSHOT_NONUNIQUE_NAME                = 13017;
 
-	   /* Guest Errors */
+	/* Guest Errors */
 	public final static int VIX_E_NOT_A_FILE                             = 20001;
 	public final static int VIX_E_NOT_A_DIRECTORY                        = 20002;
 	public final static int VIX_E_NO_SUCH_PROCESS                        = 20003;
 	public final static int VIX_E_FILE_NAME_TOO_LONG                     = 20004;
 
 
-	   /* JNI Errors (invented by me) */
+    /* JNI Errors (invented by me) */
 	public final static int VIX_E_JNI_TOO_MANY_PROPERTIES                = 30001;
+	public final static int VIX_E_JNI_CANNOT_RETURN_UNKNOWN_PROPERTYTYPE = 30002;
 
 	/** Create a new VIX Exception */
 	public VixException(int errorCode) {

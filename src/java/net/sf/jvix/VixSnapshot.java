@@ -41,6 +41,12 @@ public class VixSnapshot {
 	}
 	
 	
+	public boolean equals(Object other) {
+		if (other==null) { return false; }
+		if (! (other instanceof VixSnapshot)) { return false; }
+		return snapshotHandle.equals(((VixSnapshot) other).getVixHandle());
+	}
+	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#finalize()
 	 */

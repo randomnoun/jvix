@@ -6,7 +6,7 @@
  * Callbacks
    =========
 
-   VIX supports the concept of either using callbacks or polling to determine the completion
+   VIX supports the concept of either using callbacks or polling to determine completion
    of long-running tasks.
 
    The simplest case, polling, involves invoking a method with
@@ -50,7 +50,38 @@
 #include "jni.h"
 
 #define LOGGER_NAME "net.sf.jvix.VixWrapper"
+#define VIX_E_JNI_TOO_MANY_PROPERTIES                30001
+#define VIX_E_JNI_CANNOT_RETURN_UNKNOWN_PROPERTYTYPE 30002
 #define null NULL
+
+/******************************************************************************************
+ ** TYPE DEFINITIONS
+ **/
+
+typedef struct {
+  int       size;
+  char*     value;
+} Blob;
+
+typedef union {
+  int       intValue;
+  char*     stringValue;
+  Bool      boolValue;
+  VixHandle handleValue;
+  int64     int64Value;
+  Blob      blobValue;
+} PropertyResult;
+
+/** I'm going to use the clientData object to contain a reference to a combined structure
+ *  that contains both an object implementing the net.sf.jvix.VixEventProc interface
+ *  and the original clientData passed to the VIX API
+ */
+typedef struct {
+    JNIEnv  *env;       /* handle to JVM environment. not sure if this needs to be tied to the calling thread.  */
+    jobject eventProc;  /* event procedure to invoke in java */
+    jobject clientData; /* original client data reference passed in from java (will be passed to eventProc as a parameter) */
+} CombinedClientData;
+
 
 
 /******************************************************************************************
@@ -105,35 +136,6 @@ void logDebug(JNIEnv *env, char *text) {
     (*env)->CallVoidMethod(env, loggerObject, debugMethodId, loggerText);
 }
 
-/** Return a list item (items within the list must always be Integers for this to work).
- * Bad things will happen if this exceeds the known size of the list, or if other types of objects
- * are supplied.
- *
- * @param env pointer to the JNI environment
- * @param list a List of Integers
- * @param index the index of the value to return
- *
- * @param the index'th item in the list
- */
-int getListItem(JNIEnv *env, jobject list, int index) {
-
-    char dbgBuffer[40];
-    snprintf(dbgBuffer, 40, "Returning %d'th item from list", index);
-    logDebug(env, dbgBuffer);
-
-	/* printf("Returning %d'th item from list\n", index); */
-    jclass listClass = (*env)->GetObjectClass(env, list);
-    jmethodID getMethodId = (*env)->GetMethodID(env, listClass, "get" , "(I)Ljava/lang/Object;");	
-    jobject listItemObject = (*env)->CallObjectMethod(env, list, getMethodId, (jint) index);
-
-		// @TODO rather import to check these types here
-    jclass integerClass = (*env)->GetObjectClass(env, listItemObject);
-    jmethodID intValueMethodId = (*env)->GetMethodID(env, integerClass, "intValue" , "()I");	
-    jint listItem = (*env)->CallIntMethod(env, listItemObject, intValueMethodId);
-
-    return listItem;
-}
-
 /** Converts a net.sf.jvix.VixHandle object into a
  *  VixHandle object
  *
@@ -171,15 +173,176 @@ jobject wrapVixHandle(JNIEnv *env, VixHandle handle) {
     return newHandle;
 }
 
-/** I'm going to use the clientData object to contain a reference to a combined structure
- *  that contains both an object implementing the net.sf.jvix.VixEventProc interface
- *  and the original clientData passed to the VIX API
+/** Create and throw a new VixException
+ *
+ * @param env JNI environment
+ * @param errorCode the VIX errorCode to associate with this exception
  */
-typedef struct {
-    JNIEnv  *env;       /* handle to JVM environment. not sure if this needs to be tied to the calling thread.  */
-    jobject eventProc;  /* event procedure to invoke in java */
-    jobject clientData; /* original client data reference passed in from java (will be passed to eventProc as a parameter) */
-} CombinedClientData;
+void throwVixException(JNIEnv *env, int errorCode)
+{
+  jclass vixExceptionClass = (*env)->FindClass(env, "net/sf/jvix/VixException");
+  jmethodID constructorMethodId = (*env)->GetMethodID(env, vixExceptionClass, "<init>" , "(I)V");
+  jobject newException = (*env)->NewObject(env, vixExceptionClass, constructorMethodId, (jint) errorCode);
+  (*env)->Throw(env, (jthrowable) newException);
+}
+
+/** Return a list item (items within the list must always be Integers for this to work).
+ * Bad things will happen if this exceeds the known size of the list, or if other types of objects
+ * are supplied.
+ *
+ * @param env pointer to the JNI environment
+ * @param list a List of Integers
+ * @param index the index of the value to return
+ *
+ * @param the index'th item in the list
+ */
+int getListItem(JNIEnv *env, jobject list, int index) {
+
+    char dbgBuffer[40];
+    snprintf(dbgBuffer, 40, "Returning %d'th item from list", index);
+    logDebug(env, dbgBuffer);
+
+	/* printf("Returning %d'th item from list\n", index); */
+    jclass listClass = (*env)->GetObjectClass(env, list);
+    jmethodID getMethodId = (*env)->GetMethodID(env, listClass, "get" , "(I)Ljava/lang/Object;");	
+    jobject listItemObject = (*env)->CallObjectMethod(env, list, getMethodId, (jint) index);
+
+		// @TODO rather import to check these types here
+    jclass integerClass = (*env)->GetObjectClass(env, listItemObject);
+    jmethodID intValueMethodId = (*env)->GetMethodID(env, integerClass, "intValue" , "()I");	
+    jint listItem = (*env)->CallIntMethod(env, listItemObject, intValueMethodId);
+
+    return listItem;
+}
+
+/** Create an Integer object (for property list return values
+ *
+ * @param env pointer to the JNI environment
+ * @param intValue integer to wrap
+ */
+jobject createInteger(JNIEnv *env, int intValue) {
+    jclass integerClass = (*env)->FindClass(env, "java/lang/Integer");
+    jmethodID constructorId = (*env)->GetMethodID(env, integerClass, "<init>" , "(I)V");
+    jobject newInteger = (*env)->NewObject(env, integerClass, constructorId, (jint) intValue);
+    return newInteger;
+} 
+
+/** Create a Boolean object (for property list return values
+ *
+ * @param env pointer to the JNI environment
+ * @param boolValue boolean to wrap
+ */
+jobject createBoolean(JNIEnv *env, Bool boolValue) {
+    jclass booleanClass = (*env)->FindClass(env, "java/lang/Boolean");
+    jmethodID constructorId = (*env)->GetMethodID(env, booleanClass, "<init>" , "(Z)V");
+    jobject newBoolean = (*env)->NewObject(env, booleanClass, constructorId, (jboolean) boolValue);
+    return newBoolean;
+} 
+
+/** Create a Long object (for property list return values
+ *
+ * @param env pointer to the JNI environment
+ * @param longValue int64 value to wrap
+ */
+jobject createLong(JNIEnv *env, int64 longValue) {
+    jclass longClass = (*env)->FindClass(env, "java/lang/Long");
+    jmethodID constructorId = (*env)->GetMethodID(env, longClass, "<init>" , "(J)V");
+    jobject newLong = (*env)->NewObject(env, longClass, constructorId, (jlong) longValue);
+    return newLong;
+} 
+
+/** Create a Java byte array object (for property list blob values)
+ *
+ * @param env pointer to the JNI environment
+ * @param BlobValue bloc value to wrap
+ */
+jobject createBlob(JNIEnv *env, Blob blobValue) {
+    jbyteArray newByteArray = (*env)->NewByteArray(env, blobValue.size);
+    // not sure if we need to perform a GetByteArrayRegion before running this...
+    (*env)->SetByteArrayRegion(env, newByteArray, 0, blobValue.size, blobValue.value);
+} 
+
+
+/** Create a List containing property values. Memory for VIX Strings are released
+ * as part of this process.
+ *
+ * @param propTypes an array of property types
+ * @param props an array of properties
+ */
+jobject createPropertyList(JNIEnv *env, char *apiCall, int size, VixPropertyType *propTypes, PropertyResult *props)
+{
+	int i;
+	char dbgBuffer[100];
+
+    // should really do more error checking here
+    jclass arrayListClass = (*env)->FindClass(env, "java/util/ArrayList");
+    if (arrayListClass==NULL) { printf("Could not find class java/util/ArrayList\n"); }
+    jmethodID constructorMethodId = (*env)->GetMethodID(env, arrayListClass, "<init>" , "()V");
+    if (constructorMethodId==NULL) { printf("Could not find constructor for class java/util/ArrayList\n"); }
+    jmethodID addMethodId = (*env)->GetMethodID(env, arrayListClass, "add" , "(Ljava/lang/Object;)Z");
+    if (addMethodId==NULL) { printf("Could not find add method for class java/util/ArrayList\n"); }
+    jobject resultList = (*env)->NewObject(env, arrayListClass, constructorMethodId);
+    if (resultList==NULL) { printf("Could not create class java/util/ArrayList\n"); }
+
+	for (i = 0; i < size; i++) {
+		switch (propTypes[i]) {
+			case VIX_PROPERTYTYPE_ANY:
+				snprintf(dbgBuffer, 100, "%s cannot return VIX_PROPERTYTYPE_ANY type (property #%d); returning null", apiCall, i);
+	            throwVixException(env, VIX_E_JNI_CANNOT_RETURN_UNKNOWN_PROPERTYTYPE);
+                return NULL;
+
+			case VIX_PROPERTYTYPE_INTEGER:
+				snprintf(dbgBuffer, 100, "%s: Returning integer property %d", apiCall, props[i].intValue);
+			    logDebug(env, dbgBuffer);
+				(*env)->CallBooleanMethod(env, resultList, addMethodId, createInteger(env, props[i].intValue));
+				break;
+			
+			case VIX_PROPERTYTYPE_STRING:
+				snprintf(dbgBuffer, 100, "%s: Returning string property '%s'", apiCall, props[i].stringValue);
+			    logDebug(env, dbgBuffer);
+				(*env)->CallBooleanMethod(env, resultList, addMethodId, (*env)->NewStringUTF(env, props[i].stringValue));
+				Vix_FreeBuffer(props[i].stringValue); 
+				break;
+				
+			case VIX_PROPERTYTYPE_BOOL:
+				snprintf(dbgBuffer, 100, "%s: Returning boolean property %d (%s)", apiCall, props[i].boolValue, (props[i].boolValue==0 ? "false" : "true"));
+			    logDebug(env, dbgBuffer);
+				(*env)->CallBooleanMethod(env, resultList, addMethodId, createBoolean(env, props[i].boolValue));
+				break;
+			
+			case VIX_PROPERTYTYPE_HANDLE:
+				snprintf(dbgBuffer, 100, "%s: Returning handle property %d", apiCall, props[i].handleValue);
+			    logDebug(env, dbgBuffer);
+				(*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, props[i].handleValue));
+				break;
+
+			case VIX_PROPERTYTYPE_INT64:
+			    // @TODO this printf mask is probably wrong
+				snprintf(dbgBuffer, 100, "%s: Returning int64 property %d", apiCall, props[i].int64Value);
+			    logDebug(env, dbgBuffer);
+				(*env)->CallBooleanMethod(env, resultList, addMethodId, createLong(env, props[i].int64Value));
+				break;
+
+			case VIX_PROPERTYTYPE_BLOB:
+				snprintf(dbgBuffer, 100, "%s: Returning bloc property", apiCall);
+			    logDebug(env, dbgBuffer);
+				(*env)->CallBooleanMethod(env, resultList, addMethodId, createBlob(env, props[i].blobValue));
+				// TODO: release memory
+				break;
+		}
+	}
+	return resultList;
+	
+}
+		/*
+        if (size>0) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop0)); }
+        if (size>1) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop1)); }
+        if (size>2) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop2)); }
+        if (size>3) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop3)); }
+        if (size>4) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop4)); }
+        if (size>5) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop5)); }
+        */
+
 
 
 /** Default callback implementation that simply defers processing to the java callback
@@ -229,13 +392,6 @@ CombinedClientData *getCombinedClientData(JNIEnv *env, jobject callbackProc, job
     return ccd;
 }
 
-void throwVixException(JNIEnv *env, int errorCode)
-{
-  jclass vixExceptionClass = (*env)->FindClass(env, "net/sf/jvix/VixException");
-  jmethodID constructorMethodId = (*env)->GetMethodID(env, vixExceptionClass, "<init>" , "(I)V");
-  jobject newException = (*env)->NewObject(env, vixExceptionClass, constructorMethodId, (jint) errorCode);
-  (*env)->Throw(env, (jthrowable) newException);
-}
 
 
 /******************************************************************************************
@@ -373,84 +529,103 @@ JNIEXPORT void JNICALL Java_net_sf_jvix_VixWrapper_Vix_1ReleaseHandle
 
 };
 
+
 /*
  * Class:     net_sf_jvix_VixWrapper
  * Method:    VixJob_Wait
  * Signature: (Lnet/sf/jvix/VixHandle;Ljava/util/List;)Ljava/util/List;
  */
 JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1Wait
-  (JNIEnv *env, jclass clazz, jobject jobhandle, jobject propertyIds)
+  (JNIEnv *env, jclass clazz, jobject jobHandleObject, jobject propertyIds)
 {
-    char dbgBuffer[80];
+    char dbgBuffer[100];
+    int  i;
+    VixError  error;
+    VixHandle jobHandle;
+    
     logDebug(env, "VixJob_Wait begin");
 		
-		// since this is a varargs call, I'm going to have to code up versions of these depending
-		// on the size of the list passed in to this method. Which is annoying. Would have been
-		// nice if we'd been supplied a vprintf()-style version.
+	// since this is a varargs call, I'm going to have to code up versions of these depending
+	// on the size of the list passed in to this method. Which is annoying. Would have been
+	// nice if we'd been supplied a vprintf()-style version.
+		
+	jobHandle = unwrapVixHandle(env, jobHandleObject);
 		
     // @TODO we should verify that the class here is what we expect
     jclass listClass = (*env)->GetObjectClass(env, propertyIds);
     jmethodID sizeMethodId = (*env)->GetMethodID(env, listClass, "size" , "()I");
     jint size = (*env)->CallIntMethod(env, propertyIds, sizeMethodId);
-    VixHandle prop0, prop1, prop2, prop3, prop4, prop5;
+    VixPropertyID   propIds[6];
+    VixPropertyType propTypes[6];
+    // should be a union struct capable of holding all returnable types
+    // (pointer size should be enough, I'd imagine) 
+    PropertyResult  props[6];
 
-    snprintf(dbgBuffer, 80, "size of list passed to VixJob_Wait: %d; jobHandle=%d", size, unwrapVixHandle(env, jobhandle));
+    snprintf(dbgBuffer, 100, "size of list passed to VixJob_Wait: %d; jobHandle=%d", size, jobHandle);
     logDebug(env, dbgBuffer);
 
-    if (size>6) {
+    if (size > 6) {
     	  logDebug(env, "VixJob_Wait thrown exception");
-    	  throwVixException(env, 30001);
+    	  throwVixException(env, VIX_E_JNI_TOO_MANY_PROPERTIES);
         return NULL;
     }
-
-    VixError error;
+    for (i = 0; i < size; i++) {
+    	propIds[i] = getListItem(env, propertyIds, i);
+    	error = Vix_GetPropertyType(jobHandle, propIds[i], &propTypes[i]);
+	    if (error!=VIX_OK) {
+			snprintf(dbgBuffer, 100, "VixJob_Wait has thrown exception determining propertyType for propId %d\n", i);	    
+    		logDebug(env, dbgBuffer);
+    	  	throwVixException(env, error);
+        	return NULL;
+        }
+    }
     switch (size) {
     	  case 0:
-    	  	error = VixJob_Wait(unwrapVixHandle(env, jobhandle), VIX_PROPERTY_NONE);
+    	  	error = VixJob_Wait(jobHandle, VIX_PROPERTY_NONE);
     	  	break;
     	  	
     	  case 1:
-    	  	error = VixJob_Wait(unwrapVixHandle(env, jobhandle), getListItem(env, propertyIds, 0), &prop0,
+    	  	error = VixJob_Wait(jobHandle, propIds[0], &props[0],
     	  	  VIX_PROPERTY_NONE);
     	  	break;
 
     	  case 2:
-    	  	error = VixJob_Wait(unwrapVixHandle(env, jobhandle), getListItem(env, propertyIds, 0), &prop0,
-    	  	  getListItem(env, propertyIds, 1), &prop1,
+    	  	error = VixJob_Wait(jobHandle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
     	  	  VIX_PROPERTY_NONE);
     	  	break;
 
     	  case 3:
-    	  	error = VixJob_Wait(unwrapVixHandle(env, jobhandle), getListItem(env, propertyIds, 0), &prop0,
-    	  	  getListItem(env, propertyIds, 1), &prop1,
-    	  	  getListItem(env, propertyIds, 2), &prop2,
+    	  	error = VixJob_Wait(jobHandle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
     	  	  VIX_PROPERTY_NONE);
     	  	break;
 
     	  case 4:
-    	  	error = VixJob_Wait(unwrapVixHandle(env, jobhandle), getListItem(env, propertyIds, 0), &prop0,
-    	  	  getListItem(env, propertyIds, 1), &prop1,
-    	  	  getListItem(env, propertyIds, 2), &prop2,
-    	  	  getListItem(env, propertyIds, 3), &prop3,
+    	  	error = VixJob_Wait(jobHandle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
     	  	  VIX_PROPERTY_NONE);
     	  	break;
 
     	  case 5:
-    	  	error = VixJob_Wait(unwrapVixHandle(env, jobhandle), getListItem(env, propertyIds, 0), &prop0,
-    	  	  getListItem(env, propertyIds, 1), &prop1,
-    	  	  getListItem(env, propertyIds, 2), &prop2,
-    	  	  getListItem(env, propertyIds, 3), &prop3,
-    	  	  getListItem(env, propertyIds, 4), &prop4,
+    	  	error = VixJob_Wait(jobHandle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  propIds[4], &props[4],
     	  	  VIX_PROPERTY_NONE);
     	  	break;
 
     	  case 6:
-    	  	error = VixJob_Wait(unwrapVixHandle(env, jobhandle), getListItem(env, propertyIds, 0), &prop0,
-    	  	  getListItem(env, propertyIds, 1), &prop1,
-    	  	  getListItem(env, propertyIds, 2), &prop2,
-    	  	  getListItem(env, propertyIds, 3), &prop3,
-    	  	  getListItem(env, propertyIds, 4), &prop4,
-    	  	  getListItem(env, propertyIds, 5), &prop5,
+    	  	error = VixJob_Wait(jobHandle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  propIds[4], &props[4],
+    	  	  propIds[5], &props[5],
     	  	  VIX_PROPERTY_NONE);
     	  	break;
     }
@@ -458,28 +633,18 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1Wait
     logDebug(env, dbgBuffer);
 
     if (error!=VIX_OK) {
-    	  logDebug(env, "VixJob_Wait has thrown exception\n");
-    	  throwVixException(env, error);
+    	logDebug(env, "VixJob_Wait has thrown an exception");
+    	throwVixException(env, error);
         return NULL;
 
     } else {
-			  // should really do more error checking here
-        jclass arrayListClass = (*env)->FindClass(env, "java/util/ArrayList");
-        if (arrayListClass==NULL) { printf("Could not find class java/util/ArrayList\n"); }
-        jmethodID constructorMethodId = (*env)->GetMethodID(env, arrayListClass, "<init>" , "()V");
-        if (constructorMethodId==NULL) { printf("Could not find constructor for class java/util/ArrayList\n"); }
-        jmethodID addMethodId = (*env)->GetMethodID(env, arrayListClass, "add" , "(Ljava/lang/Object;)Z");
-        if (addMethodId==NULL) { printf("Could not find add method for class java/util/ArrayList\n"); }
-        jobject resultList = (*env)->NewObject(env, arrayListClass, constructorMethodId);
-        if (resultList==NULL) { printf("Could not create class java/util/ArrayList\n"); }
-
-        if (size>0) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop0)); }
-        if (size>1) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop1)); }
-        if (size>2) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop2)); }
-        if (size>3) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop3)); }
-        if (size>4) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop4)); }
-        if (size>5) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop5)); }
-        logDebug(env, "VixJob_Wait end");
+        jobject resultList = createPropertyList(env, "VixJob_Wait", size, propTypes, props);
+        // return resultList;
+        if (resultList == NULL) {
+        	logDebug(env, "VixJob_Wait has thrown an exception");
+        } else {
+        	logDebug(env, "VixJob_Wait end");
+        }
         return resultList;
     }
 }
@@ -660,7 +825,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1CopyFileFromHostToG
   	
     CombinedClientData *ccd = getCombinedClientData(env, callbackProc, clientData);
     VixEventProc *callback = (ccd==NULL ? NULL : *(VixEventProc **) &defaultCallback);
-    VixHandle result = (VixHandle) VixVM_CopyFileFromGuestToHost (
+    VixHandle result = (VixHandle) VixVM_CopyFileFromHostToGuest (
       unwrapVixHandle(env, vmHandle),
       hostPathNameChars,
       guestPathNameChars,
@@ -1274,7 +1439,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1DirectoryExistsInGu
     if (pathName) { pathNameChars = (char*) (*env)->GetStringUTFChars(env, pathName, 0); }
     CombinedClientData *ccd = getCombinedClientData(env, callbackProc, clientData);
     VixEventProc *callback = (ccd==NULL ? NULL : *(VixEventProc **) &defaultCallback);
-    VixHandle result = (VixHandle) VixVM_DeleteFileInGuest (
+    VixHandle result = (VixHandle) VixVM_DirectoryExistsInGuest (
       unwrapVixHandle(env, vmHandle),
       pathNameChars,
       callback,
@@ -1571,6 +1736,135 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1UpgradeVirtualHardw
     return methodResult;		
 }
 
+/*
+ * Class:     net_sf_jvix_VixWrapper
+ * Method:    VixJob_GetNumProperties
+ * Signature: (Lnet/sf/jvix/VixHandle;I)I
+ */
+JNIEXPORT jint JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1GetNumProperties
+  (JNIEnv *env, jclass clazz, jobject jobHandle, jint resultPropertyId)
+{
+    logDebug(env, "VixJob_GetNumProperties begin");
+    jint result = VixJob_GetNumProperties (
+      unwrapVixHandle(env, jobHandle),
+      resultPropertyId);
+    logDebug(env, "VixJob_GetNumProperties end");
+    return result;		
+}
+
+/*
+ * Class:     net_sf_jvix_VixWrapper
+ * Method:    VixJob_GetNthProperties
+ * Signature: (Lnet/sf/jvix/VixHandle;ILjava/util/List;)Ljava/util/List;
+ */
+JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1GetNthProperties__Lnet_sf_jvix_VixHandle_2ILjava_util_List_2
+  (JNIEnv *env, jclass clazz, jobject jobHandleObject, jint index, jobject propertyIds)
+{
+	char dbgBuffer[100];
+	int  i;
+	VixError error;
+
+	logDebug(env, "VixJob_GetNthProperties begin");
+	VixHandle jobHandle = unwrapVixHandle(env, jobHandleObject);
+		
+    // @TODO we should verify that the class here is what we expect
+    jclass listClass = (*env)->GetObjectClass(env, propertyIds);
+    jmethodID sizeMethodId = (*env)->GetMethodID(env, listClass, "size" , "()I");
+    jint size = (*env)->CallIntMethod(env, propertyIds, sizeMethodId);
+    VixPropertyID   propIds[6];
+    VixPropertyType propTypes[6];
+    // should be a union struct capable of holding all returnable types
+    // (pointer size should be enough, I'd imagine) 
+    PropertyResult  props[6];
+
+    snprintf(dbgBuffer, 100, "size of list passed to VixJob_GetNthProperties: %d; jobHandle=%d", size, jobHandle);
+    logDebug(env, dbgBuffer);
+
+    if (size > 6) {
+    	  logDebug(env, "VixJob_GetNthProperties thrown exception");
+    	  throwVixException(env, VIX_E_JNI_TOO_MANY_PROPERTIES);
+        return NULL;
+    }
+    for (i = 0; i < size; i++) {
+    	propIds[i] = getListItem(env, propertyIds, i);
+    	error = Vix_GetPropertyType(jobHandle, propIds[i], &propTypes[i]);
+	    if (error!=VIX_OK) {
+			snprintf(dbgBuffer, 100, "VixJob_GetNthProperties has thrown exception determining propertyType for propId %d\n", i);	    
+    		logDebug(env, dbgBuffer);
+    	  	throwVixException(env, error);
+        	return NULL;
+        }
+    }
+    switch (size) {
+    	  case 0:
+    	    // pointless, but we'll allow it
+    	  	error = VixJob_GetNthProperties(jobHandle, index, VIX_PROPERTY_NONE);
+    	  	break;
+    	  	
+    	  case 1:
+    	  	error = VixJob_GetNthProperties(jobHandle, index, propIds[0], &props[0],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 2:
+    	  	error = VixJob_GetNthProperties(jobHandle, index, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 3:
+    	  	error = VixJob_GetNthProperties(jobHandle, index, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 4:
+    	  	error = VixJob_GetNthProperties(jobHandle, index, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 5:
+    	  	error = VixJob_GetNthProperties(jobHandle, index, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  propIds[4], &props[4],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 6:
+    	  	error = VixJob_GetNthProperties(jobHandle, index, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  propIds[4], &props[4],
+    	  	  propIds[5], &props[5],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+    }
+    snprintf(dbgBuffer, 80, "VixJob_GetNthProperties invoked returnCode=%d", error);
+    logDebug(env, dbgBuffer);
+
+    if (error!=VIX_OK) {
+    	logDebug(env, "VixJob_GetNthProperties has thrown an exception");
+    	throwVixException(env, error);
+        return NULL;
+
+    } else {
+        jobject resultList = createPropertyList(env, "VixJob_GetNthProperties", size, propTypes, props);
+        // return resultList;
+        if (resultList == NULL) {
+        	logDebug(env, "VixJob_GetNthProperties has thrown an exception");
+        } else {
+        	logDebug(env, "VixJob_GetNthProperties end");
+        }
+        return resultList;
+    }
+}
 
 
 
