@@ -86,7 +86,7 @@
       -->
 
 	<target name="all" description="Complete build"
-		depends="buildVixWrapper, buildJvixJar" >
+		depends="buildSleep, buildVixWrapper, buildJvixJar" >
 		
 	</target>
 	
@@ -94,6 +94,7 @@
 	  <echo message="Creating build directory structure ..."/>
 	  <mkdir dir="build/class" />
       <mkdir dir="build/dll" />
+	  <mkdir dir="build/exe" />
 	  <mkdir dir="build/h" />
 	  <mkdir dir="build/jar" />
 	  <mkdir dir="build/jni" />
@@ -212,6 +213,22 @@
 	    <arg value="${vixDir}/ws-2/32bit/vix.dll" />
 	  </exec>
 	  <copy file="build/jni/jvix.dll" tofile="build/dll/jvix.dll"/>
+	</target>
+
+	<target name="buildSleep" depends="_init" description="Create the sleep executable">
+      <!-- would be good to statically compile these once I google how to do it -->
+	  <exec executable="${bin.gcc}" 
+        dir="build/jni" >
+	    <arg value="-v" />
+	    <!-- <arg value="-mno-cygwin" /> -->
+	    <arg value="-Wl,--add-stdcall-alias" />
+	    <arg value="-D_M_IX86" />
+	    <arg value="-DNT" />
+	    <arg value="-o" />
+	    <arg value="sleep.exe" />
+	    <arg value="../../src/c/sleep.c" />
+	  </exec>
+	  <copy file="build/jni/sleep.exe" tofile="build/exe/sleep.exe"/>
 	</target>
 
 
