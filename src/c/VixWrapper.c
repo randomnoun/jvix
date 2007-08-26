@@ -77,7 +77,8 @@ typedef union {
  *  and the original clientData passed to the VIX API
  */
 typedef struct {
-    JNIEnv  *env;       /* handle to JVM environment. not sure if this needs to be tied to the calling thread.  */
+    JavaVM  *javaVM;
+    /* JNIEnv  *env;       handle to JVM environment. not sure if this needs to be tied to the calling thread.  */
     jobject eventProc;  /* event procedure to invoke in java */
     jobject clientData; /* original client data reference passed in from java (will be passed to eventProc as a parameter) */
 } CombinedClientData;
@@ -359,12 +360,22 @@ jobject createPropertyList(JNIEnv *env, char *apiCall, int size, VixPropertyType
 void defaultCallback(VixHandle jobHandle, VixEventType eventType, VixHandle moreEventInfo, void *clientData)
 {
     CombinedClientData *ccd = (CombinedClientData*) clientData;
-    JNIEnv *env = ccd->env;
-
+    JavaVM *javaVM = ccd->javaVM;
+    // JNIEnv *env = ccd->env; // probably not valid any more
+    JNIEnv *env;    
+    
+    /* printf("Invoking callback handler [calling env=%d]\n", env); */
+    
+    (*javaVM)->AttachCurrentThread(javaVM, (void**) &env, null);
+    
+    jint result = (*javaVM)->GetEnv(javaVM, (void**) &env, JNI_VERSION_1_2);
+    logDebug(env, "invoking callback handler...");
     // @TODO we should verify that the class here is what we expect
     jclass vixEventProcClass = (*env)->GetObjectClass(env, ccd->eventProc);
     jmethodID callbackMethodId = (*env)->GetMethodID(env, vixEventProcClass , "callback" , "(Lnet/sf/jvix/VixHandle;ILnet/sf/jvix/VixHandle;Ljava/lang/Object;)V");
-    (*env)->CallVoidMethod(env, ccd->eventProc, callbackMethodId, wrapVixHandle(env, jobHandle), (int) eventType, wrapVixHandle(env, moreEventInfo), ccd->clientData);
+  	(*env)->CallVoidMethod(env, ccd->eventProc, callbackMethodId, wrapVixHandle(env, jobHandle), (jint) eventType, wrapVixHandle(env, moreEventInfo), ccd->clientData);
+    /* printf("Detaching from thread\n"); */
+    (*javaVM)->DetachCurrentThread(ccd->javaVM);
 }
 
 /** Returns a pointer to a CombinedClientData object which can be used as an argument to
@@ -378,17 +389,20 @@ void defaultCallback(VixHandle jobHandle, VixEventType eventType, VixHandle more
  * @param clientData  an arbitrary object supplied by the user which will be handed to the event procedure handler
  */
 CombinedClientData *getCombinedClientData(JNIEnv *env, jobject callbackProc, jobject clientData) {
-		if (callbackProc==null) {
-			  return null;
-		}	
+	if (callbackProc==null) {
+	    return null;
+	}	
     CombinedClientData *ccd = malloc(sizeof(CombinedClientData));
     if (ccd==null) {
         // @TODO throw outofmemoryexception
         return null;
     }
+    if (callbackProc!=null) { callbackProc = (*env)->NewGlobalRef(env, callbackProc); }
+    if (clientData!=null) { clientData = (*env)->NewGlobalRef(env, clientData); }
+    (*env)->GetJavaVM(env, &(ccd->javaVM));
     ccd->eventProc = callbackProc;
     ccd->clientData = clientData;
-    ccd->env = env;
+    /* ccd->env = env; */
     return ccd;
 }
 
@@ -421,7 +435,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixHost_1Connect
 
     /* this memory needs to be reclaimed at a later point, but I'm going to ignore that as well */
     CombinedClientData *ccd = getCombinedClientData(env, callbackProc, clientData);
-	  VixEventProc *callback = (ccd==NULL ? NULL : *(VixEventProc **) &defaultCallback);
+	VixEventProc *callback = (ccd==NULL ? NULL : *(VixEventProc **) &defaultCallback);
     VixHandle result = (VixHandle) VixHost_Connect(
       (int) apiVersion,
       (VixServiceProvider) hostType,
@@ -455,7 +469,8 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1Open
     logDebug(env, "VixVM_Open begin");
     char *vmxFilePathNameChars = (char *) 0 ;
 
-    if (vmxFilePathName) { vmxFilePathNameChars = (char*) (*env)->GetStringUTFChars(env, vmxFilePathName, 0); printf("path is %s\n", vmxFilePathNameChars); }
+    if (vmxFilePathName) { vmxFilePathNameChars = (char*) (*env)->GetStringUTFChars(env, vmxFilePathName, 0); } 
+    /* printf("path is %s\n", vmxFilePathNameChars); } */
     CombinedClientData *ccd = getCombinedClientData(env, callbackProc, clientData);
     VixEventProc *callback = (ccd==NULL ? NULL : *(VixEventProc **) &defaultCallback);
     VixHandle result = (VixHandle) VixVM_Open (
@@ -464,7 +479,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1Open
       callback,
       (void*) ccd);
     if (vmxFilePathName) { (*env)->ReleaseStringUTFChars(env, vmxFilePathName, (const char *) vmxFilePathNameChars); }
-    printf("result=%d\n", result);
+    /* printf("result=%d\n", result); */
     jobject methodResult = wrapVixHandle(env, result);
     logDebug(env, "VixVM_Open end");
     return methodResult;
@@ -557,8 +572,6 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1Wait
     jint size = (*env)->CallIntMethod(env, propertyIds, sizeMethodId);
     VixPropertyID   propIds[6];
     VixPropertyType propTypes[6];
-    // should be a union struct capable of holding all returnable types
-    // (pointer size should be enough, I'd imagine) 
     PropertyResult  props[6];
 
     snprintf(dbgBuffer, 100, "size of list passed to VixJob_Wait: %d; jobHandle=%d", size, jobHandle);
@@ -888,8 +901,9 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1EnableSharedFolders
       (int) option,
       callback,
       (void*) ccd);
-    jobject methodResult = methodResult;
+    jobject methodResult = wrapVixHandle(env, result);
     logDebug(env, "VixVM_EnableSharedFolders end");
+    return methodResult;
 }
 
 /*
@@ -1220,7 +1234,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixHost_1FindItems
 {
     logDebug(env, "VixHost_FindItems begin");
     CombinedClientData *ccd = getCombinedClientData(env, callbackProc, clientData);
-    VixEventProc *callback = (ccd==NULL ? NULL : *(VixEventProc **) &defaultCallback);
+    VixEventProc *callback = (ccd==NULL ? NULL : defaultCallback);
     VixHandle result = (VixHandle) VixHost_FindItems (
       unwrapVixHandle(env, hostHandle),
       (int) searchType,
@@ -1773,8 +1787,6 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1GetNthProperties__
     jint size = (*env)->CallIntMethod(env, propertyIds, sizeMethodId);
     VixPropertyID   propIds[6];
     VixPropertyType propTypes[6];
-    // should be a union struct capable of holding all returnable types
-    // (pointer size should be enough, I'd imagine) 
     PropertyResult  props[6];
 
     snprintf(dbgBuffer, 100, "size of list passed to VixJob_GetNthProperties: %d; jobHandle=%d", size, jobHandle);
@@ -1865,6 +1877,142 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1GetNthProperties__
         return resultList;
     }
 }
+
+/*
+ * Class:     net_sf_jvix_VixWrapper
+ * Method:    Vix_GetProperties
+ * Signature: (Lnet/sf/jvix/VixHandle;Ljava/util/List;)Ljava/util/List;
+ */
+JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_Vix_1GetProperties
+  (JNIEnv *env, jclass clazz, jobject handleObject, jobject propertyIds)
+{
+	char dbgBuffer[100];
+	int  i;
+	VixError error;
+
+	logDebug(env, "Vix_GetProperties begin");
+	VixHandle handle = unwrapVixHandle(env, handleObject);
+		
+    // @TODO we should verify that the class here is what we expect
+    jclass listClass = (*env)->GetObjectClass(env, propertyIds);
+    jmethodID sizeMethodId = (*env)->GetMethodID(env, listClass, "size" , "()I");
+    jint size = (*env)->CallIntMethod(env, propertyIds, sizeMethodId);
+    VixPropertyID   propIds[6];
+    VixPropertyType propTypes[6];
+    PropertyResult  props[6];
+
+    snprintf(dbgBuffer, 100, "size of list passed to Vix_GetProperties: %d; handle=%d", size, handle);
+    logDebug(env, dbgBuffer);
+
+    if (size > 6) {
+    	  logDebug(env, "Vix_GetProperties has thrown an exception");
+    	  throwVixException(env, VIX_E_JNI_TOO_MANY_PROPERTIES);
+        return NULL;
+    }
+    for (i = 0; i < size; i++) {
+    	propIds[i] = getListItem(env, propertyIds, i);
+    	error = Vix_GetPropertyType(handle, propIds[i], &propTypes[i]);
+	    if (error!=VIX_OK) {
+			snprintf(dbgBuffer, 100, "Vix_GetProperties has thrown exception determining propertyType for propId %d\n", i);	    
+    		logDebug(env, dbgBuffer);
+    	  	throwVixException(env, error);
+        	return NULL;
+        }
+    }
+    switch (size) {
+    	  case 0:
+    	    // pointless, but we'll allow it
+    	  	error = Vix_GetProperties(handle, VIX_PROPERTY_NONE);
+    	  	break;
+    	  	
+    	  case 1:
+    	  	error = Vix_GetProperties(handle, propIds[0], &props[0],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 2:
+    	  	error = Vix_GetProperties(handle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 3:
+    	  	error = Vix_GetProperties(handle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 4:
+    	  	error = Vix_GetProperties(handle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 5:
+    	  	error = Vix_GetProperties(handle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  propIds[4], &props[4],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+
+    	  case 6:
+    	  	error = Vix_GetProperties(handle, propIds[0], &props[0],
+    	  	  propIds[1], &props[1],
+    	  	  propIds[2], &props[2],
+    	  	  propIds[3], &props[3],
+    	  	  propIds[4], &props[4],
+    	  	  propIds[5], &props[5],
+    	  	  VIX_PROPERTY_NONE);
+    	  	break;
+    }
+    snprintf(dbgBuffer, 80, "VixJob_GetProperties invoked returnCode=%d", error);
+    logDebug(env, dbgBuffer);
+
+    if (error!=VIX_OK) {
+    	logDebug(env, "VixJob_GetProperties has thrown an exception");
+    	throwVixException(env, error);
+        return NULL;
+
+    } else {
+        jobject resultList = createPropertyList(env, "VixJob_GetProperties", size, propTypes, props);
+        // return resultList;
+        if (resultList == NULL) {
+        	logDebug(env, "VixJob_GetProperties has thrown an exception");
+        } else {
+        	logDebug(env, "VixJob_GetProperties end");
+        }
+        return resultList;
+    }
+}
+
+
+/*
+ * Class:     net_sf_jvix_VixWrapper
+ * Method:    VixVM_GetSharedFolderState
+ * Signature: (Lnet/sf/jvix/VixHandle;ILnet/sf/jvix/VixEventProc;Ljava/lang/Object;)Lnet/sf/jvix/VixHandle;
+ */
+JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1GetSharedFolderState
+  (JNIEnv *env, jclass clazz, jobject vmHandle, jint index, jobject callbackProc, jobject clientData)
+{
+    logDebug(env, "VixVM_GetSharedFolderState begin");
+    CombinedClientData *ccd = getCombinedClientData(env, callbackProc, clientData);
+    VixEventProc *callback = (ccd==NULL ? NULL : *(VixEventProc **) &defaultCallback);
+    VixHandle result = (VixHandle) VixVM_GetSharedFolderState (
+      unwrapVixHandle(env, vmHandle),
+      (int) index,
+      callback,
+      (void*) ccd);
+    jobject methodResult = wrapVixHandle(env, result);
+    logDebug(env, "VixVM_GetSharedFolderState end");
+    return methodResult;		
+}
+
+
 
 
 
