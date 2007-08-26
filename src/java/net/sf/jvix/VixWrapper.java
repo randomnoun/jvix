@@ -152,6 +152,10 @@ public class VixWrapper {
 
 	/** VixMsgSharedFolderOptions constant for use in {@link #VixVM_SetSharedFolderState(VixHandle, String, String, int, VixEventProc, Object)} */
 	public final static int VIX_SHAREDFOLDER_WRITE_ACCESS = 4;
+
+	/** VixRunProgramOptions constant for use in {@link #VixVM_RunProgramInGuest(VixHandle, String, String, int, VixHandle, VixEventProc, Object)} */
+	public final static int VIX_RUNPROGRAM_RETURN_IMMEDIATELY   = 0x0001;
+	public final static int VIX_RUNPROGRAM_ACTIVATE_WINDOW      = 0x0002;
 	
     /** Creates a host handle.
      * 
@@ -1441,7 +1445,8 @@ public class VixWrapper {
 
 	/* static intitialiser */
 	static {
-		System.out.println(System.getProperty("java.library.path"));
+		Logger logger = Logger.getLogger(VixWrapper.class);
+		logger.debug("java.library.path='" + System.getProperty("java.library.path") + "'");
 		System.loadLibrary("jvix");
 		String buildId = "(custom build)";
 		ClassLoader classLoader = VixWrapper.class.getClassLoader();
@@ -1458,7 +1463,6 @@ public class VixWrapper {
 				// ignore exceptions
 			}
 		}
-		Logger logger = Logger.getLogger(VixWrapper.class);
 		logger.info("jvix initialised [" + buildId + "]");
 	}
 

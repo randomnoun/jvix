@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 /** Object-oriented wrapper for the VIX Host API
  * 
  * @author knoxg
@@ -12,6 +14,9 @@ import java.util.List;
 public class VixHost {
 
 	private VixHandle hostHandle;
+	
+	/** Logger instance for this class */
+	public static final Logger logger = Logger.getLogger(VixHost.class);
 
 	public VixHost(int apiVersion, int hostType, String hostName, int hostPort, String userName, String password)
 		throws VixException
@@ -78,11 +83,14 @@ public class VixHost {
 		final List items = new ArrayList();
 		VixEventProc discoverProc = new VixEventProc() {
 			public void callback(VixHandle handle, int eventType, VixHandle moreEventInfo, Object clientData) {
+				
+				logger.debug("VixHost.findItems.discoverProc invoked (eventType=" + eventType + ")");
 				if (eventType!=VixWrapper.VIX_EVENTTYPE_FIND_ITEM) {
 					return;
 				}
-				List properties = VixWrapper.Vix_GetProperties(moreEventInfo,
-				  new int[] { VixWrapper.VIX_PROPERTY_FOUND_ITEM_LOCATION } );
+				List findItemsCallbackProperties = new ArrayList();
+				findItemsCallbackProperties.add(new Integer(VixWrapper.VIX_PROPERTY_FOUND_ITEM_LOCATION));
+				List properties = VixWrapper.Vix_GetProperties(moreEventInfo, findItemsCallbackProperties);
 				items.add(properties.get(0));				    
 			}
 		};

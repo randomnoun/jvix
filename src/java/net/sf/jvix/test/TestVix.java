@@ -17,6 +17,7 @@ import net.sf.jvix.VixVM;
 import net.sf.jvix.VixWrapper;
 import net.sf.jvix.data.VixFile;
 import net.sf.jvix.data.VixProcess;
+import net.sf.jvix.data.VixSharedFolderState;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -40,7 +41,7 @@ public class TestVix {
 		
 		props.put("log4j.appender.TEST", "org.apache.log4j.ConsoleAppender");
 		props.put("log4j.appender.TEST.layout", "org.apache.log4j.PatternLayout");
-		props.put("log4j.appender.TEST.layout.ConversionPattern", "=%d{dd/MM/yy HH:mm:ss.SSS} %p %c{1} - %m%n");
+		props.put("log4j.appender.TEST.layout.ConversionPattern", "%d{dd/MM/yy HH:mm:ss.SSS} %5p %c{1} - %m%n");
 		PropertyConfigurator.configure(props);
 		
 		Logger logger = Logger.getLogger("net.sf.jvix.VixWrapper");
@@ -64,6 +65,22 @@ public class TestVix {
 			  VixWrapper.VIX_SERVICEPROVIDER_VMWARE_WORKSTATION, 
 			  vmHost, vmHostPort, 
 			  "presumablyIgnoredUsername", "presumablyIgnoredPassword" );
+			
+			List vms = vixHost.findItems(VixWrapper.VIX_FIND_REGISTERED_VMS);
+			System.out.println("== start registered VMs listing");
+			for (Iterator i = vms.iterator(); i.hasNext(); ) {
+				Object obj = i.next();
+				System.out.println("  (" + obj.getClass().getName() + ") " + obj.toString());
+			}
+			System.out.println("== end registered VMs listing");
+			
+			vms = vixHost.findItems(VixWrapper.VIX_FIND_RUNNING_VMS);
+			System.out.println("== start running VMs listing");
+			for (Iterator i = vms.iterator(); i.hasNext(); ) {
+				Object obj = i.next();
+				System.out.println("  (" + obj.getClass().getName() + ") " + obj.toString());
+			}
+			System.out.println("== end running VMs listing");
 			vixVM = vixHost.open(vmLocation);
 			
 			// snapshot management (only 1 level deep)
@@ -107,7 +124,14 @@ public class TestVix {
 					System.out.println("Deletion of file failed");
 				}
 			}
+			if (vixVM.directoryExistsInGuest("c:\\vix-directory")) {
+				vixVM.deleteDirectoryInGuest("c:\\vix-directory");
+				if (vixVM.directoryExistsInGuest("c:\\vix-directory")) {
+					System.out.println("Deletion of directory failed");
+				}
+			}
 
+			
 			File hostFile1 = new File("c:\\vix-host-source.txt");
 			File hostFile2 = new File("c:\\vix-host-dest.txt");
 			if (hostFile1.exists()) { hostFile1.delete(); }
@@ -150,6 +174,65 @@ public class TestVix {
 			if (vixVM.directoryExistsInGuest("C:\\slkdjksdj")) {
 				System.out.println("Guest directory non-existence test failed");
 			}
+
+			vixVM.createDirectoryInGuest("c:\\vix-directory");
+			if (!vixVM.directoryExistsInGuest("c:\\vix-directory")) {
+				System.out.println("Create directory in guest failed");
+			} else {
+				vixVM.deleteDirectoryInGuest("c:\\vix-directory");
+				if (vixVM.directoryExistsInGuest("c:\\vix-directory")) {
+					System.out.println("Deletion of directory failed");
+				}
+			}
+			
+			String tempFilename = vixVM.createTempFileInGuest();
+			System.out.println("Created temp file '" + tempFilename + "'");
+			if (!vixVM.fileExistsInGuest(tempFilename)) {
+				System.out.println("Temp file not found");
+			} else {
+				vixVM.deleteFileInGuest(tempFilename);
+				if (vixVM.fileExistsInGuest(tempFilename)) {
+					System.out.println("Deletion of temp file failed");
+				}
+			}
+			
+			int numSharedFolders = vixVM.getNumSharedFolders();
+			System.out.println("Number of shared folders: " + numSharedFolders);
+			System.out.println("== start shared folder listing");
+			boolean removeVixShare = false;
+			for (int i=0; i<numSharedFolders; i++) {
+				VixSharedFolderState vixFolderState = vixVM.getSharedFolderState(i);
+				System.out.println("  " +
+				  "name='" + vixFolderState.getName() + "', " +
+				  "host='" + vixFolderState.getHost() + "', " +
+				  "flags=" + vixFolderState.getFlags());
+				if (vixFolderState.getName().equals("VixShare")) {
+					removeVixShare = true;
+				}
+			}
+			System.out.println("== end shared folder listing");
+
+			if (removeVixShare) {
+				System.out.println("Removing share 'VixShare'");
+				vixVM.removeSharedFolder("VixShare");
+				numSharedFolders = vixVM.getNumSharedFolders();
+				for (int i=0; i<numSharedFolders; i++) {
+					VixSharedFolderState vixFolderState = vixVM.getSharedFolderState(i);
+					if (vixFolderState.getName().equals("VixShare")) {
+						System.out.println("Remove share failed");
+					}
+				}
+			}
+			
+			// shared folders; may need reboot to take effect?
+			File localShare = new File("c:\\vix-shared-folder");
+			localShare.mkdir();
+			vixVM.enableSharedFolders(true);
+			
+			vixVM.addSharedFolder("VixShare", "c:\\vix-shared-folder", VixWrapper.VIX_SHAREDFOLDER_WRITE_ACCESS);
+
+			
+			
 			
 			// directory list
 			List directoryList = vixVM.listDirectoryInGuest("C:\\");
@@ -175,8 +258,79 @@ public class TestVix {
 			}
 			System.out.println("== end process listing");
 
+
+			vixVM.logoutFromGuest();
+			
+			// need console for web browsing & console processes
+			vixVM.loginInGuest(VixWrapper.VIX_CONSOLE_USER_NAME, null);
+			
+			// web browsing
+			vixVM.openUrlInGuest("http://www.google.com");
+			
+			// processes
+			vixVM.copyFileFromHostToGuest("c:\\cygwin\\bin\\cygwin1.dll", "c:\\cygwin1.dll");
+			vixVM.copyFileFromHostToGuest("..\\exe\\sleep.exe", "c:\\sleep.exe");
+			System.out.println("Start guest sleep (3 seconds, return value = 5)...");
+			long startTime = System.currentTimeMillis();
+			VixProcess process = vixVM.runProgramInGuest("c:\\sleep.exe", "3 5", 0);
+			long endTime = System.currentTimeMillis();
+			long elapsed = endTime - startTime;
+			System.out.println("Process " + process.getPid() + " complete, " +
+			  "exit code = " + process.getGuestProgramExitCode() + ", " +
+			  "reported elapsed time = " + process.getGuestProgramElapsedTime());
+			System.out.println("Measured elapsed time (" + elapsed + " msec)");
+			// if this is less than 3 seconds, it probably didn't work
+			if (elapsed < 3000) {
+				System.out.println("runProgramInGuest() failed");
+			}
+			
+
+			startTime = System.currentTimeMillis();
+			process = vixVM.runProgramInGuest("c:\\sleep.exe", "3 5", 
+				VixWrapper.VIX_RUNPROGRAM_RETURN_IMMEDIATELY);
+			Thread.sleep(500);
+			boolean foundProcess = false;
+			processList = vixVM.listProcessesInGuest();
+			for (Iterator i = processList.iterator(); i.hasNext(); ) {
+				VixProcess vixProcess = (VixProcess) i.next();
+				if (vixProcess.getPid()==process.getPid()) {
+					foundProcess = true;
+				}
+			}
+			if (foundProcess) {
+				vixVM.killProcessInGuest(process.getPid());
+				foundProcess = false;
+				processList = vixVM.listProcessesInGuest();
+				for (Iterator i = processList.iterator(); i.hasNext(); ) {
+					VixProcess vixProcess = (VixProcess) i.next();
+					if (vixProcess.getPid()==process.getPid()) {
+						foundProcess = true;
+					}
+				}
+				if (foundProcess) {
+					System.out.println("killProcessInGuest failed");
+				}
+			} else {
+				System.out.println("runProgramInGuest (return immediately) failed");
+			}
+			
+			endTime = System.currentTimeMillis();
+			elapsed = endTime - startTime;
+			System.out.println("Process " + process.getPid() + " complete, " +
+			  "exit code = " + process.getGuestProgramExitCode() + ", " +
+			  "reported elapsed time = " + process.getGuestProgramElapsedTime());
+			System.out.println("Measured elapsed time (" + elapsed + " msec)");
 			
 			vixVM.logoutFromGuest();
+			
+			System.out.println("Suspending VM");
+			vixVM.suspend();
+			System.out.println("VM suspended, powering on VM");
+			vixVM.powerOn(VixWrapper.VIX_VMPOWEROP_LAUNCH_GUI);
+			System.out.println("VM powered on, resetting VM");
+			vixVM.reset();
+			System.out.println("VM reset");
+			
 			
 			// vixVM.powerOff();
 		} finally {

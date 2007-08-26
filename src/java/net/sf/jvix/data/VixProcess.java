@@ -21,6 +21,9 @@ public class VixProcess {
 	private long pid;
 	private String owner;
 	private String command;
+	
+	private int guestProgramElapsedTime;
+	private int guestProgramExitCode;
 
 	public VixProcess(String name, long pid, String owner, String command)
 	{
@@ -30,9 +33,19 @@ public class VixProcess {
 		this.command = command;
 	}
 	
+	public VixProcess(String name, long pid, int guestProgramElapsedTime, int guestProgramExitCode) 
+	{
+		this.name = name;
+		this.pid = pid;
+		this.guestProgramElapsedTime = guestProgramElapsedTime;
+		this.guestProgramExitCode = guestProgramExitCode;
+	}
+	
 	public String getName() { return name; }
 	public long  getPid() { return pid; }
 	public String getOwner() { return owner; }
 	public String getCommand() { return command; }
+	public int getGuestProgramElapsedTime() { return guestProgramElapsedTime; }
+	public int getGuestProgramExitCode() { return guestProgramExitCode; }
 	
 }

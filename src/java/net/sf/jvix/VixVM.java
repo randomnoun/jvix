@@ -396,12 +396,21 @@ public class VixVM {
 		}
 	}
 	
-	public void runProgramInGuest(String guestProgramName, String commandLineArgs, int options) throws VixException {
+	public VixProcess runProgramInGuest(String guestProgramName, String commandLineArgs, int options) throws VixException {
 		// @TODO return program details
 		VixHandle jobHandle = VixWrapper.VixVM_RunProgramInGuest(vmHandle, 
 		  guestProgramName, commandLineArgs, options, new VixHandle(VixWrapper.VIX_INVALID_HANDLE), null, null);
 		try {
-			List result = VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);		  	
+			List nthPropertyList = new ArrayList();
+			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_PROCESS_ID));
+			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_GUEST_PROGRAM_ELAPSED_TIME));
+			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_GUEST_PROGRAM_EXIT_CODE));
+			List result = VixWrapper.VixJob_Wait(jobHandle, nthPropertyList);
+			VixProcess process = new VixProcess(guestProgramName, 
+				((Long) result.get(0)).longValue(),
+				((Integer) result.get(1)).intValue(),
+				((Integer) result.get(2)).intValue());
+			return process;
 		} finally {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);
 		}
@@ -429,7 +438,7 @@ public class VixVM {
 		}
 	}
 	
-	public void VixVM_Suspend() throws VixException {
+	public void suspend() throws VixException {
 		VixHandle jobHandle = VixWrapper.VixVM_Suspend(vmHandle, 0, null, null);
 		try {
 			List result = VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);		  	
