@@ -25,6 +25,9 @@
         
         cygwinDir: location of cygwin (for gcc etc)
                    defaults to "C:/cygwin"
+                   
+        bin.cvs:   location of a WSAD/Eclipse-compatible CVS executable
+        		   defaults to "C:/Program Files/CVSNT/cvs.exe"
         
       Feel free to override any others.
       
@@ -36,17 +39,15 @@
 	<!-- per-user properties must be specified *before* other properties -->
     <property file="src/resources/properties/${env.COMPUTERNAME}-${user.name}.properties" />
 
-    <!-- deployment imports (override in ../src/ant-properties folder) -->
+    <!-- deployment imports (override in ../src/resources/properties folder) -->
     <property name="windowsDir" value="C:/WINDOWS" />
-    <property name="cygwinInstallDir" value="C:\cygwin"/>
+    <property name="cygwinInstallDir" value="C:/cygwin"/>
     <property name="vixDir" value="C:/Program Files/VMware/VMware VIX" />
 	<property name="jdkDir" value="C:/Java/j2sdk1.4.2_15" />
 
-    <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc"/>
-    <property name="bin.bash" value="${cygwinInstallDir}/bin/bash"/>
-	
-	
-    <property name="bin.swig" value="${cygwinInstallDir}/usr/local/bin/swig"/>    
+    <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc" />
+    <property name="bin.bash" value="${cygwinInstallDir}/bin/bash" />
+	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
 	
 	<property name="currentDir" value="${user.dir}" />
 	<property name="increaseBuildNumber" value="false" />
@@ -230,15 +231,60 @@
     </target>
 	
 	<target name="statcvs" depends="_init" description="Generate statistics this project.">
-	  <echo message="Generating CVS statistics" />
-	  <exec executable="${bin.bash}" >
-	    <arg value="-c" />
-	    <arg value="src/sh/statcvs.sh" />
-	  </exec>
-	  <echo message="Refreshing project" />
-	  <!-- doesn't work in Eclipse Europa (v3.3.0)
-	  <eclipse.refreshLocal resource="jvix" />
-	  -->
+	    <echo message="Generating CVS log" />
+		<echo>
+Warning: the first time you run this, this task may appear to
+hang. If you check the 'build/statcvs/cvs.log' file and it requests
+confirmation of the server's SSL key, then run the following lines
+from a command line:
+
+	C:\Documents and Settings\knoxg\My Documents\workspace\jvix>"c:\program files\cvsnt\cvs" login
+	Logging in to :extssh:yourusername@jvix.cvs.sourceforge.net:22:/cvsroot/jvix
+	CVS Password: xxxxxx
+	The server's host key is not cached in the registry. You
+	have no guarantee that the server is the computer you
+	think it is.
+	The server's key fingerprint is:
+	1024 21:20:02:30:ef:5f:cc:6d:38:1a:36:4b:fc:5f:33:57
+	If you trust this host, hit Yes to add the key to
+	PuTTY's cache and carry on connecting.
+	If you want to carry on connecting just once, without
+	adding the key to the cache, hit No.
+	If you do not trust this host, hit Cancel to abandon the
+	connection.			
+
+and then hit "Y"
+			
+(ignore this message if you have already performed the steps above)			
+		</echo>
+
+		<mkdir dir="build/statcvs" />
+		<exec dir="." 
+			executable="${bin.cvs}" 
+			output="build/statcvs/cvs.log"
+			
+		>
+			<arg value="log" />
+			<redirector error="build/statcvs/cvs-error.log" />
+		</exec>
+		<echo message="Generating CVS statistics" />
+        <java classname="net.sf.statcvs.Main" 
+			fork="true" 
+	        dir="build/statcvs"
+	        jvm="${jdkDir}/bin/java"
+	        failonerror = "true"
+        	
+	     >
+	        <classpath>
+	          <path refid="classpath.all.lib" />
+	        </classpath> 
+	        <arg value="./cvs.log" />
+	        <arg value="../.." />
+		</java>
+	    <echo message="Refreshing project" />
+	    <!-- doesn't work in Eclipse Europa (v3.3.0)
+	    <eclipse.refreshLocal resource="jvix" />
+	    -->
 	</target>
 	
 	
