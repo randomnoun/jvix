@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
  */
 public class VixHost {
 
+	/** VixHandle used to represent this host */
 	private VixHandle hostHandle;
 	
 	/** Logger instance for this class */
@@ -204,6 +205,14 @@ public class VixHost {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);
 		}
 		return;
+	}
+
+	/** Returns the vix handle associated with this host 
+	 * 
+	 * @return the vix handle associated with this host
+	 */
+	public VixHandle getVixHandle() {
+		return hostHandle;
 	}
 	
 	/** Finalizes this object
