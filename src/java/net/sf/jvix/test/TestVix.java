@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -35,10 +33,9 @@ public class TestVix {
 	
 	public static void main(String[] args) throws VixException, InterruptedException, IOException {
 
-		// setup log4j (seems to create first file though... arg!)
+		// setup log4j
 		Properties props = new Properties();
 		props.put("log4j.rootLogger", "DEBUG, TEST");
-		
 		props.put("log4j.appender.TEST", "org.apache.log4j.ConsoleAppender");
 		props.put("log4j.appender.TEST.layout", "org.apache.log4j.PatternLayout");
 		props.put("log4j.appender.TEST.layout.ConversionPattern", "%d{dd/MM/yy HH:mm:ss.SSS} %5p %c{1} - %m%n");
@@ -131,7 +128,6 @@ public class TestVix {
 				}
 			}
 
-			
 			File hostFile1 = new File("c:\\vix-host-source.txt");
 			File hostFile2 = new File("c:\\vix-host-dest.txt");
 			if (hostFile1.exists()) { hostFile1.delete(); }
@@ -228,11 +224,7 @@ public class TestVix {
 			File localShare = new File("c:\\vix-shared-folder");
 			localShare.mkdir();
 			vixVM.enableSharedFolders(true);
-			
 			vixVM.addSharedFolder("VixShare", "c:\\vix-shared-folder", VixWrapper.VIX_SHAREDFOLDER_WRITE_ACCESS);
-
-			
-			
 			
 			// directory list
 			List directoryList = vixVM.listDirectoryInGuest("C:\\");
@@ -329,7 +321,12 @@ public class TestVix {
 			vixVM.powerOn(VixWrapper.VIX_VMPOWEROP_LAUNCH_GUI);
 			System.out.println("VM powered on, resetting VM");
 			vixVM.reset();
-			System.out.println("VM reset");
+			System.out.println("VM reset; powering off VM");
+			vixVM.powerOff();
+			
+			
+			
+			
 			
 			
 			// vixVM.powerOff();

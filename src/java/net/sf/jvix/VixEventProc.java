@@ -15,40 +15,11 @@ package net.sf.jvix;
  * @author knoxg
  * @version $Id$
  */
-public abstract class VixEventProc extends Thread {
+public abstract class VixEventProc {
 
-	/** Internal buffer used by the jvix framework. */ 
+	/* * Internal buffer used by the jvix framework.  
 	private transient byte[] jvixBuffer;
-	
-	/** These fields are updated by the jvix C code before invoking notify() on this class */
-	private transient VixHandle handle;
-	private transient int       eventType;
-	private transient VixHandle moreEventInfo;
-	private transient Object    clientData;
-	private transient boolean complete  = false;
-	
-	public void run() {
-		while (!complete) {
-			try {
-				wait();
-			} catch (InterruptedException ie) {
-			}
-			if (!complete) {
-				callback(handle, eventType, moreEventInfo, clientData);
-			}
-		}
-	}
-	
-	/** Must be invoked by the Javaa code when this event procedure is no longer needed;
-	 * it will inform the JNI framework that the opaque data contained in the jvix
-	 * buffer is no longer needed.
-	 */
-	public void release() {
-		complete = true;  // stop the thread
-		notify();
-		// VixWrapper.releaseEventProc(this);
-	}
-	
+	*/
 	
 /*
 	typedef void VixEventProc(VixHandle handle,
