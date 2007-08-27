@@ -1,9 +1,5 @@
 package net.sf.jvix.data;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import net.sf.jvix.VixVM;
 
 /** A data object to contain values return by the 
