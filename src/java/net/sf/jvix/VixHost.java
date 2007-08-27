@@ -206,7 +206,7 @@ public class VixHost {
 		return;
 	}
 	
-	/** Finalizes this object (non-Javadoc)
+	/** Finalizes this object
 	 * 
 	 * @see java.lang.Object#finalize()
 	 */

@@ -959,18 +959,66 @@ public class VixVM {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);
 		}
 	}
+
 	
-	public void runScriptInGuest(String interpreter, String scriptName, int options) throws VixException {
-		// @TODO return program details
-		VixHandle jobHandle = VixWrapper.VixVM_RunScriptInGuest(vmHandle, 
+   /** This function runs a script in the guest operating system. 
+    *
+    <ul>
+    <li>This function runs the script in the guest operating system.
+    <li>The current working directory for the script executed in the guest is not defined.
+    Absolute paths should be used for files in the guest, including the path
+    to the interpreter, and any files referenced in the script text.
+    <li>You must call {@link #loginInGuest(String, String)} before calling this function.
+    <li>If the options parameter is 0, this function will report completion to the job handle
+    when the program exits in the guest operating system.
+    Alternatively, you can pass {@link net.sf.jvix.VixWrapper#VIX_RUNPROGRAM_RETURN_IMMEDIATELY}
+     as the value of the options parameter, and this function
+    reports completion to the job handle as soon as the program starts in the guest.
+    <li> When the job is signaled, a VixProcess object will be available on
+    the returned job handle; only the id, elapsedTime and exitCode properties will
+    be valid.
+    If the option parameter is VIX_RUNPROGRAM_RETURN_IMMEDIATELY, the latter two will
+    both be 0.
+    </ul>  
+    *  
+    * @param interpreter The path to the script interpreter
+    * @param scriptText The text of the script. 
+    * @param option Run options for the program. See the notes below
+    * 
+	 * @return A VixProcess describing the script that was run or is running
+    */
+	public VixProcess runScriptInGuest(String interpreter, String scriptName, int options) throws VixException {
+ 		VixHandle jobHandle = VixWrapper.VixVM_RunScriptInGuest(vmHandle, 
 		  interpreter, scriptName, options, new VixHandle(VixWrapper.VIX_INVALID_HANDLE), null, null);
 		try {
-			/*List result =*/ VixWrapper.VixJob_Wait(jobHandle, Collections.EMPTY_LIST);		  	
+			List nthPropertyList = new ArrayList();
+			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_PROCESS_ID));
+			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_GUEST_PROGRAM_ELAPSED_TIME));
+			nthPropertyList.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_GUEST_PROGRAM_EXIT_CODE));
+			List result = VixWrapper.VixJob_Wait(jobHandle, nthPropertyList);
+			VixProcess process = new VixProcess(scriptName, 
+				((Long) result.get(0)).longValue(),
+				((Integer) result.get(1)).intValue(),
+				((Integer) result.get(2)).intValue());
+			return process;
 		} finally {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);
 		}
 	}
 	
+	  /** This function modifies the state of a shared folder mounted in the virtual machine.
+	   * 
+	   * <ul><li>This function modifies the state flags of an existing shared folder. 
+	   * <li>If the shared folder specified by shareName does not exist before calling this function, the job handle for this function will return VIX_E_NOT_FOUND. 
+	   * <li>It is not necessary to call {@link, #loginInGuest(String, String)} before calling this function. 
+	   * <li>Shared folders are not supported for the following guest operating systems: 
+	   * Windows ME, Windows 98, Windows 95, Windows 3.x, and DOS.
+	   * </ul> 
+	   *  
+	   * @param shareName Specifies the name of the shared folder
+	   * @param hostPathName Specifies the host path of the shared folder. 
+	   * @param flags The new flag settings. 
+	   */
 	public void setSharedFolderState(String shareName, String hostPathName, int flags) throws VixException {
 		// @TODO jobHandle is set to error code in some cases
 		VixHandle jobHandle = VixWrapper.VixVM_SetSharedFolderState(vmHandle, 
@@ -982,6 +1030,11 @@ public class VixVM {
 		}
 	}
 	
+   /** This function suspends a virtual machine.
+    * 
+    * <p>If the virtual machine is not powered on when you 
+    * call this function, the function returns an error. 
+    */
 	public void suspend() throws VixException {
 		VixHandle jobHandle = VixWrapper.VixVM_Suspend(vmHandle, 0, null, null);
 		try {
@@ -991,6 +1044,15 @@ public class VixVM {
 		}
 	}
 	
+   /** Upgrades the virtual hardware version of the virtual machine to match 
+    * the version of the VIX library. This has no effect if the virtual machine 
+    * is already at the same version or at a newer version than the VIX library. 
+    * 
+    * <ul><li>The virtual machine must be powered off to do this operation. 
+    * <li>When the VM is already up-to-date, the job handle for this function 
+    * will return VIX_E_VM_ALREADY_UP_TO_DATE.
+    * </ul> 
+    */
 	public void upgradeVirtualHardware() throws VixException {
 		VixHandle jobHandle = VixWrapper.VixVM_Suspend(vmHandle, 0, null, null);
 		try {
@@ -1000,6 +1062,26 @@ public class VixVM {
 		}
 	} 
 
+   /** This function signals the job handle when VMware Tools has successfully started 
+    * in the guest operating system. VMware Tools is a collection of services that run 
+    * in the guest. 
+    * 
+    * <ul><li> This function signals the job when VMware Tools has successfully started
+     in the guest operating system. VMware Tools is a collection of services
+     that run in the guest.
+     <li>VMware Tools must be installed and running for some Vix functions to operate
+     correctly. If VMware Tools is not installed in the guest operating system,
+     or if the virtual machine is not powered on, this function reports an error
+     to the job object.
+     <li> The {@link net.sf.jvix.VixWrapper#VIX_PROPERTY_VM_TOOLS_STATE} property of the 
+     virtual machine handle is undefined until <tt>waitForToolsInGuest()</tt> reports that 
+     VMware Tools is running.
+     </ul>
+    * 
+    * @param timeoutInSeconds The timeout in seconds. 
+    * If VMware Tools has not started by this time, the function completes with an error. 
+    * If the value of this argument is zero or negative, then there will be no timeout. 
+    */
 	public void waitForToolsInGuest(int timeoutInSeconds) throws VixException {
 		VixHandle jobHandle = VixWrapper.VixVM_WaitForToolsInGuest(vmHandle, timeoutInSeconds, null, null);
 		try {
@@ -1007,16 +1089,19 @@ public class VixVM {
 		} finally {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);
 		}
-				 
 	}
 
+	/** Releases the resources associated with this virtual machine.
+	 * 
+	 */
 	public void close() {
 		if (vmHandle != null) { 
 			VixWrapper.Vix_ReleaseHandle(vmHandle); 
 		}		
 	}
 	
-	/* (non-Javadoc)
+	/** Finalizes this object
+	 * 
 	 * @see java.lang.Object#finalize()
 	 */
 	protected void finalize() throws Throwable {
