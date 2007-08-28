@@ -18,7 +18,7 @@
       
         jdkDir:    location of a Java JDK
                    required for JNI includes; 
-                   defaults to "C:/Java/j2sdk1.4.2_15" )
+                   defaults to "C:/Java/j2sdk1.4.2_15"
       
         vixDir:    location of the VIX directory
                    defaults to "C:/Program Files/VMware/VMware VIX"
@@ -44,27 +44,38 @@
     <property name="cygwinInstallDir" value="C:/cygwin"/>
     <property name="vixDir" value="C:/Program Files/VMware/VMware VIX" />
 	<property name="jdkDir" value="C:/Java/j2sdk1.4.2_15" />
-
+	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
+	
     <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc" />
     <property name="bin.bash" value="${cygwinInstallDir}/bin/bash" />
-	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
+	<property name="bin.zip" value="${cygwinInstallDir}/bin/zip" />
+	<property name="bin.find" value="${cygwinInstallDir}/bin/find" />
+	<property name="bin.cut" value="${cygwinInstallDir}/bin/cut" />
+	
+	<!-- used in build database and release filenames -->
+	<property name="jvixReleaseVersion" value="0.1" />
 	
 	<property name="currentDir" value="${user.dir}" />
 	<property name="increaseBuildNumber" value="false" />
-	
-	<!--
-	<property name="pluginDir" value="${user.dir}/eclipse/plugins" />
-    -->	
 
 	<path id="classpath.build.target"   location="build/class" />
+	
+	<!-- all JARs in the lib/compile folder; these are needed for compilation but are not 
+	     not needed when using the library 
+	  -->
 	<path id="classpath.compile.lib">
 	  <fileset dir="lib/compile" includes="*.jar" />
 	</path>
+	
+	<!-- all JARs in the lib/runtime folder; these are needed for compilation at when
+	     jvix is deployed
+	  -->
 	<path id="classpath.runtime.lib">
 	  <fileset dir="lib/runtime" includes="*.jar" />
 	</path>
 	
-    <path id="classpath.all.lib">
+
+	<path id="classpath.all.lib">
       <path refid="classpath.compile.lib" />
       <path refid="classpath.runtime.lib" />
     </path>
@@ -91,6 +102,7 @@
 	</target>
 	
 	<target name="_init" description="Create directories required by other targets">
+	  <echo message="Reading build property file 'src/resources/properties/${env.COMPUTERNAME}-${user.name}.properties'" />
 	  <echo message="Creating build directory structure ..."/>
 	  <mkdir dir="build/class" />
       <mkdir dir="build/dll" />
@@ -102,7 +114,7 @@
 	</target>
 	
 	<condition property="testIncreaseBuildNumber">
-		<equals arg1="${increaseBuildNumber}" arg2="true" />
+		<equals arg1="${increaseBuildNumber}" arg2="false" />
 	</condition>
 	<target name="_increaseBuildNumber" description="Increase build number; only run this on the main build machine" unless="testIncreaseBuildNumber">
 	  <echo message="Increasing build number"/>
@@ -125,7 +137,7 @@
         <arg value="--product" />
         <arg value="jvix" />
         <arg value="--release" />
-        <arg value="0.1" />
+        <arg value="${jvixReleaseVersion}" />
         <arg value="--baseDir" />
         <arg value="." />
         <arg value="--source" />
@@ -304,6 +316,47 @@ and then hit "Y"
 	    -->
 	</target>
 	
-	
+	<target name="distribution" depends="all" description="Creates a JVIX distribution for uploading to sourceforge">
+		<mkdir dir="build/dist" />
+		<delete file="build/dist/jvix-${jvixReleaseVersion}-bin.zip"/>
+		<delete file="build/dist/jvix-${jvixReleaseVersion}-src.zip"/>
+		<!-- binary-only archive (inclueds runtime JARs) -->
+		<exec executable="${bin.zip}" dir="build/dist" >
+		    <arg value="-rj" />
+		    <arg value="jvix-${jvixReleaseVersion}-bin.zip" />
+		    <arg value="../../doc/README.txt" />
+		    <arg value="../../doc/lgpl-3.0.txt" />
+		    <arg value="../../build/jar/jvix.jar" />
+		    <arg value="../../build/dll/jvix.dll" />
+		</exec>
+		<exec executable="${bin.zip}" dir="build" >
+		    <arg value="-r" />
+		    <arg value="dist/jvix-${jvixReleaseVersion}-bin.zip" />
+			<arg value="javadoc" />
+		</exec>
+		<exec executable="${bin.zip}" dir="." >
+		    <arg value="-r" />
+		    <arg value="dist/jvix-${jvixReleaseVersion}-bin.zip" />
+			<arg value="lib/runtime" />
+		</exec>
+		
+		<!-- binary + source archive -->
+		<copy 
+			file="build/dist/jvix-${jvixReleaseVersion}-bin.zip"
+		    tofile="build/dist/jvix-${jvixReleaseVersion}-src.zip" 
+		/>
+		<exec executable="${bin.zip}" dir="." >
+		    <arg value="-r" />
+		    <arg value="build/dist/jvix-${jvixReleaseVersion}-src.zip" />
+			<arg value="build.xml" />
+			<arg value="src" />
+		    <arg value="lib" />
+		    <arg value="-x" />
+		    <arg value="\*CVS\*" />
+		    <arg value="-x" />
+		    <arg value="\*jvixBuild.properties" />
+		</exec>
+
+	</target>
 	
 </project>

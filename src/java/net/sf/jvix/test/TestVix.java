@@ -21,7 +21,8 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 /**
- * JVIX Java object API test.
+ * JVIX Java object API test. This class exercises most of the jvix methods in 
+ * the OO interface (and therefore will also test the underlying JNI code).  
  * 
  * @author knoxg
  * @version $Id$
@@ -30,7 +31,20 @@ public class TestVix {
 
 	/** Revision to use in stack traces */
 	public static String _revision = "$Id$";
+
+	/** Test vmware machine */
+	public static final String VM_LOCATION = "C:\\Documents and Settings\\knoxg\\My Documents\\My Virtual Machines\\test01\\Windows XP Professional.vmx";
 	
+	/** Host that this vmware machine resides on */
+	public static final String VM_HOST = "127.0.0.1";
+	
+	/** A login for privileged tasks in this vmware machine */
+	public static final String VM_LOGIN_USERNAME = "knoxg";
+	
+	/** A password for privileged tasks in this vmware machine */
+	public static final String VM_LOGIN_PASSWORD = "abc123";
+	
+	/** Main method */
 	public static void main(String[] args) throws VixException, InterruptedException, IOException {
 
 		// setup log4j
@@ -44,8 +58,8 @@ public class TestVix {
 		Logger logger = Logger.getLogger("net.sf.jvix.VixWrapper");
 		logger.debug("VixWrapper debug logger enabled");
 
-		String vmLocation = "C:\\Documents and Settings\\knoxg\\My Documents\\My Virtual Machines\\test01\\Windows XP Professional.vmx";
-		String vmHost = "127.0.0.1";
+		String vmLocation = VM_LOCATION;
+		String vmHost = VM_HOST;
 		int vmHostPort = 0;
 		
 		//String vmLocation = "/home/knoxg/vmware/000 Clean WinXP/000 Clean WinXP.vmx";
@@ -105,7 +119,7 @@ public class TestVix {
 			// poweron / login
 			vixVM.powerOn(VixWrapper.VIX_VMPOWEROP_LAUNCH_GUI);
 			vixVM.waitForToolsInGuest(300);
-			vixVM.loginInGuest("knoxg", "abc123");
+			vixVM.loginInGuest(VM_LOGIN_USERNAME, VM_LOGIN_PASSWORD);
 			
 			// file operations
 			// -- clear up old files first
@@ -324,12 +338,6 @@ public class TestVix {
 			System.out.println("VM reset; powering off VM");
 			vixVM.powerOff();
 			
-			
-			
-			
-			
-			
-			// vixVM.powerOff();
 		} finally {
 			if (vixVM!=null) { vixVM.close(); }	
 			if (vixHost!=null) { vixHost.close(); }
