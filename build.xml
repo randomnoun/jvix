@@ -53,7 +53,8 @@
 	<property name="bin.cut" value="${cygwinInstallDir}/bin/cut" />
 	
 	<!-- used in build database and release filenames -->
-	<property name="jvixReleaseVersion" value="0.1" />
+	<!-- increment this number as soon as a release has been uploaded to sourceforge --> 
+	<property name="jvixReleaseVersion" value="0.2" />
 	
 	<property name="currentDir" value="${user.dir}" />
 	<property name="increaseBuildNumber" value="false" />
