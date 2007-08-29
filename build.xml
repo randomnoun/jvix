@@ -75,7 +75,10 @@
 	  <fileset dir="lib/runtime" includes="*.jar" />
 	</path>
 	
-
+    <path id="classpath.emma">
+      <pathelement path="lib/compile/emma.jar" />
+      <pathelement path="lib/compile/emma_ant.jar" />
+    </path>
 	<path id="classpath.all.lib">
       <path refid="classpath.compile.lib" />
       <path refid="classpath.runtime.lib" />
@@ -91,6 +94,15 @@
       </fileset>
     </path>
 
+
+    <!--
+      **********************************************************************
+      * taskdef section
+      *
+      -->
+
+	<taskdef resource="emma_ant.properties" classpathref="classpath.emma" />
+	
     <!--
       **********************************************************************
       * target section
@@ -106,6 +118,9 @@
 	  <echo message="Reading build property file 'src/resources/properties/${env.COMPUTERNAME}-${user.name}.properties'" />
 	  <echo message="Creating build directory structure ..."/>
 	  <mkdir dir="build/class" />
+	  <mkdir dir="build/emma" />
+	  <mkdir dir="build/junit" />
+	  <mkdir dir="build/dist" />
       <mkdir dir="build/dll" />
 	  <mkdir dir="build/exe" />
 	  <mkdir dir="build/h" />
@@ -359,7 +374,57 @@ and then hit "Y"
 		    <arg value="-x" />
 		    <arg value="\*jvixBuild.properties" />
 		</exec>
-
 	</target>
+
+	<target name="emma" depends="buildJvixJar">
+
+	  <!-- create instrumented MessageManager classes -->
+	  <emma enabled="true" >
+        <instr instrpathref="classpath.run"
+             destdir="${basedir}/build/emma/class"	
+             metadatafile="${basedir}/build/emma/report/metadata.emma"
+             merge="true"
+        >
+          <!-- don't include meridian yet -->
+          <filter includes="net.sf.jvix.*" />
+          <filter excludes="net.sf.jvix.util.IncreaseBuildNumber" />
+        </instr>
+      </emma>
+     
+      <!-- create instrumented meridian classes (not used in test below, but handy) -->
+      <copy file="build/jar/jvix.jar" tofile="build/jar/jvix-emma.jar" />
+	  <emma enabled="true" >
+        <instr instrpath="build/jar/jvix-emma.jar"
+             mode="overwrite"
+             merge="false"
+        >
+          <filter includes="net.sf.jvix.*" />
+        </instr>
+      </emma>
+      <java classname="net.sf.jvix.test.TestVix" fork="true"
+      	dir="build/jni"
+        output="${basedir}/build/junit/reports-emma.txt"
+      >
+        <classpath>
+          <pathelement location="build/emma/class" />
+          <path refid="classpath.run" />
+          <path refid="classpath.emma" />
+        </classpath>
+		<jvmarg value="-Djava.library.path=${basedir}\build\jni" />
+        <jvmarg value="-Demma.coverage.out.file=${basedir}/build/emma/report/coverage.emma" />
+        <jvmarg value="-Demma.coverage.out.merge=false" />
+      </java>
+      <emma enabled="true" >
+        <report>
+          <fileset dir="build/emma/report" >
+            <include name="*.emma" />
+          </fileset>
+          <sourcepath path="src\java" />
+          <txt outfile="build/emma/report/coverage.txt" />
+          <html outfile="build/emma/report/coverage.html" />
+        </report>
+      </emma>
+	</target>
+	
 	
 </project>
