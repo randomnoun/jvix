@@ -6,7 +6,7 @@ body, th, td
 }
 body
 {
-  background-color: #f6f6f6; 
+  background-color: #ffffff; 
 }
 html body, body th, body td 
 {
@@ -38,7 +38,7 @@ a:link.selfref, a:visited.selfref
 /* .TableRowColor         { background: #F5F4F1; color:#686868 } */ /* White */
 .TableHeadingColor     { background: #525D73; color:#f0f0f0 }
 .TableSubHeadingColor  { background: #A2ADC3; color:#f0f0f0 }
-.TableRowColor         { background: #f6f6f6; color:#000000 }
+.TableRowColor         { background: #ffffff; color:#000000 }
 
 
 /* Font used in left-hand frame lists */
