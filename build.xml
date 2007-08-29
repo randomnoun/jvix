@@ -252,7 +252,9 @@
             destdir="build/javadoc"
             additionalparam="-breakiterator "
             sourcepath="src/java"
+			stylesheetfile="doc/javadoc-stylesheet.css" 
           >
+		  
           <classpath refid="classpath.all.lib" />
           <packageset dir="src/java" >
              <include name="net/sf/jvix/**/*" />
