@@ -426,5 +426,29 @@ and then hit "Y"
       </emma>
 	</target>
 	
+    <target name="doccheck" 
+      description="Runs the doccheck javadoc tool over the MessageManager source, generating an HTML report"
+    >
+	  <mkdir dir="${basedir}/build/doccheck" />
+      <javadoc
+         destdir="."
+         author="true"
+         version="true"
+      >
+
+        <packageset dir="src/java" defaultexcludes="yes">
+          <include name="net/sf/jvix/**"/>
+          <!-- <exclude name="net/sf/jvix/doc-files/**"/> -->
+        </packageset>
+		<doclet name="com.sun.tools.doclets.doccheck.DocCheck" path="lib/compile/doccheck.jar">
+          <param name="-d" value="${basedir}/build/doccheck"/>
+	    </doclet>
+	    <classpath refid="classpath.all.lib"/>
+	    <classpath path="build/class" />
+	    <!-- <classpath path="${jdkDir}/jre/lib/xml.jar" /> -->
+      </javadoc>
+    </target>
+	
+	
 	
 </project>
