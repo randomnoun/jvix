@@ -1,0 +1,68 @@
+<html><body>
+This package contains the main jvix wrapper and object API classes.
+
+<h1>JVIX</h1>
+
+<h2>Overview</h2>
+
+JVIX is intended to allow Java developers to use the (freely available) VIX API to 
+control VMware virtual machines.
+
+<h2>Usage</h2>
+
+There are two methods of using JVIX; the VixWrapper interface and an object-oriented 
+interface.
+
+The VixWrapper interface simply attempts to mimic the interface of the existing C
+API; there is generally a 1-to-1 relation between a VixWrapper method and a C VIX API call.
+The only changes here are:
+
+<ul>
+<li> where possible, all datatypes (int, char* etc...) are represented by their native
+     Java datatypes. Enumerated types are represented by integers.
+<li> all handles are represented by the net.sf.jvix.VixHandle object
+<li> callbacks are implemented using the net.sf.jvix.EventProc class
+<li> property lists are passed into methods as Lists of Integer objects 
+</ul>
+
+The object-oriented interface adds an additional layer of abstraction over the 
+native API calls; this API aims for simplicity over flexibility. Some features are 
+therefore unavailable using the object-oriented interface (e.g. callbacks); almost
+all methods will block until they are complete. API calls which take parameters which
+are fixed or ignored are also removed from this interface. Job handle objects are
+automatically released, and are generally hidden from the programmer (although 
+virtual machine and snapshot handles must still be closed). 
+
+<h2>Requirements</h2>
+
+JVIX uses the log4j framework internally; a log4j JAR should be on the classpath; to 
+enable debug logging of all JNI calls, use a log4j.properties file similar to the
+following:
+
+<pre>
+  log4j.rootLogger=INFO, CONSOLE
+  log4j.appender.CONSOLE=org.apache.log4j.ConsoleAppender
+  log4j.appender.CONSOLE.layout=org.apache.log4j.PatternLayout
+  log4j.appender.CONSOLE.layout.ConversionPattern=%d{dd/MM/yy HH:mm:ss.SSS} %5p %c{1} - %m%n
+  log4j.logger.net.sf.jvix.VixWrapper=DEBUG
+</pre>
+
+see the {@link net.sf.jvix.test.TestVix} class for an example on setting log4j properties
+programatically.
+
+<h2>Examples</h2>
+
+See {@link net.sf.jvix.TestVix} class for examples in using the API.
+
+<h2>Licence</h2>
+
+JVIX is licenced under the LGPL (v3.0)
+
+<h2>Bugs</h2>		
+
+A small amount of memory is allocated within the C code for each event procedure 
+that is passed into a VixWrapper method. This memory is not freed, and will therefore
+remain unavailable to the system, creating a memory leak over time. This will be
+fixed for the 1.0 release.
+
+</body></html>
