@@ -45,12 +45,19 @@
     <property name="vixDir" value="C:/Program Files/VMware/VMware VIX" />
 	<property name="jdkDir" value="C:/Java/j2sdk1.4.2_15" />
 	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
+	<property name="bin.pscp" value="C:/Program Files/PuTTY/pscp.exe" />
 	
     <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc" />
     <property name="bin.bash" value="${cygwinInstallDir}/bin/bash" />
 	<property name="bin.zip" value="${cygwinInstallDir}/bin/zip" />
 	<property name="bin.find" value="${cygwinInstallDir}/bin/find" />
 	<property name="bin.cut" value="${cygwinInstallDir}/bin/cut" />
+	<property name="bin.cut" value="${cygwinInstallDir}/bin/cut" />
+
+	<!-- sourceforge upload settings (override in ../src/resources/properties folder) --> 
+	<property name="sourceforge.password" value="xxxxxx" />
+	<property name="sourceforge.username" value="xxxxxx" />
+
 	
 	<!-- used in build database and release filenames -->
 	<!-- increment this number as soon as a release has been uploaded to sourceforge --> 
@@ -385,7 +392,6 @@ and then hit "Y"
              metadatafile="${basedir}/build/emma/report/metadata.emma"
              merge="true"
         >
-          <!-- don't include meridian yet -->
           <filter includes="net.sf.jvix.*" />
           <filter excludes="net.sf.jvix.util.IncreaseBuildNumber" />
         </instr>
@@ -448,7 +454,46 @@ and then hit "Y"
 	    <!-- <classpath path="${jdkDir}/jre/lib/xml.jar" /> -->
       </javadoc>
     </target>
-	
-	
+
+    <target name="uploadDocumentsToSourceforge" 
+      description="Updates the sourceforge site with the latest javadoc, doccheck, emma, statcvs output" >
+    	<echo message="Copying javadocs..."/>
+		<exec executable="${bin.pscp}" dir="." >
+			<arg value="-pw" />
+			<arg value="${sourceforge.password}" />
+		    <arg value="-r" />
+			<arg value="build/javadoc/*" />
+			<arg value="${sourceforge.username}@shell.sourceforge.net:/home/groups/j/jv/jvix/htdocs/doc/javadoc" />
+		</exec>
+
+    	<echo message="Copying doccheck..."/>
+		<exec executable="${bin.pscp}" dir="." >
+			<arg value="-pw" />
+			<arg value="${sourceforge.password}" />
+		    <arg value="-r" />
+			<arg value="build/doccheck/*" />
+			<arg value="${sourceforge.username}@shell.sourceforge.net:/home/groups/j/jv/jvix/htdocs/doc/doccheck" />
+		</exec>
+
+    	<echo message="Copying emma..."/>
+		<exec executable="${bin.pscp}" dir="." >
+			<arg value="-pw" />
+			<arg value="${sourceforge.password}" />
+		    <arg value="-r" />
+			<arg value="build/emma/report/*" />
+			<arg value="${sourceforge.username}@shell.sourceforge.net:/home/groups/j/jv/jvix/htdocs/doc/emma" />
+		</exec>
+
+    	<echo message="Copying statcvs..."/>
+		<exec executable="${bin.pscp}" dir="." >
+			<arg value="-pw" />
+			<arg value="${sourceforge.password}" />
+		    <arg value="-r" />
+			<arg value="build/statcvs/*" />
+			<arg value="${sourceforge.username}@shell.sourceforge.net:/home/groups/j/jv/jvix/htdocs/doc/statcvs" />
+		</exec>
+    	
+    </target>
+
 	
 </project>
