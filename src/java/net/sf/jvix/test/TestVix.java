@@ -3,7 +3,9 @@ package net.sf.jvix.test;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -47,20 +49,46 @@ public class TestVix {
 	/** Main method */
 	public static void main(String[] args) throws VixException, InterruptedException, IOException {
 
-		// setup log4j
-		Properties props = new Properties();
-		props.put("log4j.rootLogger", "DEBUG, TEST");
-		props.put("log4j.appender.TEST", "org.apache.log4j.ConsoleAppender");
-		props.put("log4j.appender.TEST.layout", "org.apache.log4j.PatternLayout");
-		props.put("log4j.appender.TEST.layout.ConversionPattern", "%d{dd/MM/yy HH:mm:ss.SSS} %5p %c{1} - %m%n");
-		PropertyConfigurator.configure(props);
+		// set defaults
+		String vmLocation = VM_LOCATION;
+		String vmHostName = VM_HOST;
+		int vmHostPort = 0;
+		String vmLoginUsername = VM_LOGIN_USERNAME;
+		String vmLoginPassword = VM_LOGIN_PASSWORD;
 		
+		// setup log4j
+		Properties log4jProps = new Properties();
+		log4jProps.put("log4j.rootLogger", "DEBUG, TEST");
+		log4jProps.put("log4j.appender.TEST", "org.apache.log4j.ConsoleAppender");
+		log4jProps.put("log4j.appender.TEST.layout", "org.apache.log4j.PatternLayout");
+		log4jProps.put("log4j.appender.TEST.layout.ConversionPattern", "%d{dd/MM/yy HH:mm:ss.SSS} %5p %c{1} - %m%n");
+		PropertyConfigurator.configure(log4jProps);
+
 		Logger logger = Logger.getLogger("net.sf.jvix.VixWrapper");
 		logger.debug("VixWrapper debug logger enabled");
 
-		String vmLocation = VM_LOCATION;
-		String vmHost = VM_HOST;
-		int vmHostPort = 0;
+		// load properties for this host/username
+		String machineName;
+		try {
+			machineName = InetAddress.getLocalHost().getHostName();
+		} catch(Exception ex) {
+			machineName = "localhost";
+		}
+		String username = System.getProperty("user.name");
+		String propsFile = "resources/properties/" + machineName + "-" + username + ".properties"; 
+		logger.info("Loading properties from '" + propsFile + "'");
+		InputStream is = TestVix.class.getClassLoader().getResourceAsStream(propsFile);
+		if (is==null) {
+			logger.info("No properties file found; using defaults");
+		} else {
+			Properties props = new Properties();
+			props.load(is);
+			String p = props.getProperty("test.vmHostName"); if (p!=null) { vmHostName = p; }
+			p = props.getProperty("test.vmHostPort"); if (p!=null) { vmHostPort = Integer.parseInt(p); }
+			p = props.getProperty("test.vmLocation"); if (p!=null) { vmLocation = p; }
+			p = props.getProperty("test.vmLoginUsername"); if (p!=null) { vmLoginUsername = p; }
+			p = props.getProperty("test.vmLoginPassword"); if (p!=null) { vmLoginPassword = p; }
+		}
 		
 		//String vmLocation = "/home/knoxg/vmware/000 Clean WinXP/000 Clean WinXP.vmx";
 		//String vmHost = "monk";
@@ -74,7 +102,7 @@ public class TestVix {
 			// retieve VM
 			vixHost = new VixHost(VixWrapper.VIX_API_VERSION,
 			  VixWrapper.VIX_SERVICEPROVIDER_VMWARE_WORKSTATION, 
-			  vmHost, vmHostPort, 
+			  vmHostName, vmHostPort, 
 			  "presumablyIgnoredUsername", "presumablyIgnoredPassword" );
 			
 			List vms = vixHost.findItems(VixWrapper.VIX_FIND_REGISTERED_VMS);
@@ -119,7 +147,7 @@ public class TestVix {
 			// poweron / login
 			vixVM.powerOn(VixWrapper.VIX_VMPOWEROP_LAUNCH_GUI);
 			vixVM.waitForToolsInGuest(300);
-			vixVM.loginInGuest(VM_LOGIN_USERNAME, VM_LOGIN_PASSWORD);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
 			
 			// file operations
 			// -- clear up old files first
