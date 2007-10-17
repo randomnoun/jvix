@@ -335,16 +335,6 @@ jobject createPropertyList(JNIEnv *env, char *apiCall, int size, VixPropertyType
 	return resultList;
 	
 }
-		/*
-        if (size>0) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop0)); }
-        if (size>1) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop1)); }
-        if (size>2) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop2)); }
-        if (size>3) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop3)); }
-        if (size>4) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop4)); }
-        if (size>5) { (*env)->CallBooleanMethod(env, resultList, addMethodId, wrapVixHandle(env, prop5)); }
-        */
-
-
 
 /** Default callback implementation that simply defers processing to the java callback
  * defined in the CombinedClientData structure
@@ -365,7 +355,6 @@ void defaultCallback(VixHandle jobHandle, VixEventType eventType, VixHandle more
     JNIEnv *env;    
     
     /* printf("Invoking callback handler [calling env=%d]\n", env); */
-    
     (*javaVM)->AttachCurrentThread(javaVM, (void**) &env, null);
     
     jint result = (*javaVM)->GetEnv(javaVM, (void**) &env, JNI_VERSION_1_2);
@@ -2011,8 +2000,4 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1GetSharedFolderStat
     logDebug(env, "VixVM_GetSharedFolderState end");
     return methodResult;		
 }
-
-
-
-
 
