@@ -50,9 +50,6 @@
     <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc" />
     <property name="bin.bash" value="${cygwinInstallDir}/bin/bash" />
 	<property name="bin.zip" value="${cygwinInstallDir}/bin/zip" />
-	<property name="bin.find" value="${cygwinInstallDir}/bin/find" />
-	<property name="bin.cut" value="${cygwinInstallDir}/bin/cut" />
-	<property name="bin.cut" value="${cygwinInstallDir}/bin/cut" />
 
 	<!-- sourceforge upload settings (override in ../src/resources/properties folder) --> 
 	<property name="sourceforge.password" value="xxxxxx" />
@@ -316,7 +313,6 @@ and then hit "Y"
 		<exec dir="." 
 			executable="${bin.cvs}" 
 			output="build/statcvs/cvs.log"
-			
 		>
 			<arg value="log" />
 			<redirector error="build/statcvs/cvs-error.log" />
@@ -327,7 +323,6 @@ and then hit "Y"
 	        dir="build/statcvs"
 	        jvm="${jdkDir}/bin/java"
 	        failonerror = "true"
-        	
 	     >
 	        <classpath>
 	          <path refid="classpath.all.lib" />
@@ -492,8 +487,6 @@ and then hit "Y"
 			<arg value="build/statcvs/*" />
 			<arg value="${sourceforge.username}@shell.sourceforge.net:/home/groups/j/jv/jvix/htdocs/doc/statcvs" />
 		</exec>
-    	
     </target>
-
 	
 </project>
