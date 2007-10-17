@@ -63,6 +63,13 @@ public class VixHost {
 		jobWaitProperties.add(new Integer(VixWrapper.VIX_PROPERTY_JOB_RESULT_HANDLE));
 		try {
 			result = VixWrapper.VixJob_Wait(jobHandle, jobWaitProperties);	 
+		} catch (VixException ve) {
+			if (ve.getErrorCode()==1000) {
+				// could be due to serial number expiry; annotate exception trace
+				throw (VixException) new VixException(VixException.VIX_E_JNI_CANNOT_RETURN_UNKNOWN_PROPERTYTYPE).initCause(ve);
+			} else {
+				throw ve;
+			}
 		} finally {
 			VixWrapper.Vix_ReleaseHandle(jobHandle);	
 		}
@@ -134,7 +141,6 @@ public class VixHost {
 		final List items = new ArrayList();
 		VixEventProc discoverProc = new VixEventProc() {
 			public void callback(VixHandle handle, int eventType, VixHandle moreEventInfo, Object clientData) {
-				
 				logger.debug("VixHost.findItems.discoverProc invoked (eventType=" + eventType + ")");
 				if (eventType!=VixWrapper.VIX_EVENTTYPE_FIND_ITEM) {
 					return;

@@ -130,6 +130,7 @@ public class VixException extends Exception {
     /* JNI Errors (invented by me) */
 	public final static int VIX_E_JNI_TOO_MANY_PROPERTIES                = 30001;
 	public final static int VIX_E_JNI_CANNOT_RETURN_UNKNOWN_PROPERTYTYPE = 30002;
+	public final static int VIX_E_JNI_INVALID_HANDLE_POSSIBLE_SERIALNUMBER_EXPIRY = 30003;
 
 	/** Create a new VIX Exception */
 	public VixException(int errorCode) {
