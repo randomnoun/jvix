@@ -94,6 +94,13 @@ public class TestVix {
 		//String vmHost = "monk";
 		//int vmHostPort = 0;  // 902 = default
 		
+		System.out.println("TextVix started");
+		System.out.println("VM Hostname: " + vmHostName);
+		System.out.println("VM Hostport: " + vmHostPort);
+		System.out.println("VM Location: " + vmLocation);
+		System.out.println("VM Login username: " + vmLoginUsername);
+		System.out.println("VM Login password: " + vmLoginPassword);
+		
 		VixHost     vixHost = null;
 		VixVM       vixVM = null;
 		VixSnapshot vixRootSnapshot = null;
