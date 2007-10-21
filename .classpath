@@ -11,5 +11,6 @@
 	<classpathentry kind="lib" path="lib/compile/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/compile/junit.jar"/>
 	<classpathentry kind="lib" path="lib/compile/statcvs.jar"/>
+	<classpathentry kind="lib" path="lib/runtime/junit-4.4.jar" sourcepath="lib/src/junit-4.4-src.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
