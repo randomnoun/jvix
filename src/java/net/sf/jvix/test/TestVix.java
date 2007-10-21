@@ -10,6 +10,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 import net.sf.jvix.VixException;
 import net.sf.jvix.VixHost;
 import net.sf.jvix.VixSnapshot;
@@ -29,7 +33,7 @@ import org.apache.log4j.PropertyConfigurator;
  * @author knoxg
  * @version $Id$
  */
-public class TestVix {
+public class TestVix extends TestCase {
 
 	/** Revision to use in stack traces */
 	public static String _revision = "$Id$";
@@ -37,24 +41,40 @@ public class TestVix {
 	/** Test vmware machine */
 	public static final String VM_LOCATION = "C:\\Documents and Settings\\knoxg\\My Documents\\My Virtual Machines\\test01\\Windows XP Professional.vmx";
 	
-	/** Host that this vmware machine resides on */
+	/** Default host that this vmware machine resides on */
 	public static final String VM_HOST = "127.0.0.1";
 	
-	/** A login for privileged tasks in this vmware machine */
+	/** Default login for privileged tasks in this vmware machine */
 	public static final String VM_LOGIN_USERNAME = "knoxg";
 	
-	/** A password for privileged tasks in this vmware machine */
+	/** Default password for privileged tasks in this vmware machine */
 	public static final String VM_LOGIN_PASSWORD = "abc123";
-	
-	/** Main method */
-	public static void main(String[] args) throws VixException, InterruptedException, IOException {
 
-		// set defaults
-		String vmLocation = VM_LOCATION;
-		String vmHostName = VM_HOST;
-		int vmHostPort = 0;
-		String vmLoginUsername = VM_LOGIN_USERNAME;
-		String vmLoginPassword = VM_LOGIN_PASSWORD;
+	// set defaults
+	/** Actual VM location used in tests */
+	String vmLocation = VM_LOCATION;
+	
+	/** Actual host name used in tests */
+	String vmHostName = VM_HOST;
+	
+	/** Actual port number used in tests */
+	int vmHostPort = 0;
+	
+	/** Login for privileged tasks in test vmware machine */
+	String vmLoginUsername = VM_LOGIN_USERNAME;
+	
+	/** Password for privileged tasks in test vmware machine */
+	String vmLoginPassword = VM_LOGIN_PASSWORD;
+	
+	
+	/** Create a new TestVix class */
+	public TestVix(String name)
+    {
+        super(name);
+    }
+	
+	/** Perform test setup actions */
+	protected void setUp() throws IOException {
 		
 		// setup log4j
 		Properties log4jProps = new Properties();
@@ -100,18 +120,43 @@ public class TestVix {
 		System.out.println("VM Location: " + vmLocation);
 		System.out.println("VM Login username: " + vmLoginUsername);
 		System.out.println("VM Login password: " + vmLoginPassword);
+	}
+
+	/** Return a new VixHost object for use in a test */
+	private VixHost getVixHost() throws VixException {
+		return new VixHost(VixWrapper.VIX_API_VERSION,
+		  VixWrapper.VIX_SERVICEPROVIDER_VMWARE_WORKSTATION, 
+		  vmHostName, vmHostPort, 
+		  "presumablyIgnoredUsername", "presumablyIgnoredPassword" );		
+	}
+	
+	/** Return a new VixVM object for use in a test */
+	private VixVM getVixVM(VixHost vixHost) throws VixException {
+		return vixHost.open(vmLocation);
+	}
+
+	/** Define a test suits to ensure the order of the tests */
+	public static Test suite() {
+	    TestSuite testsToRun = new TestSuite();
+	    testsToRun.addTest(new TestVix("testFindVMs"));
+	    testsToRun.addTest(new TestVix("testFindSnapshots"));
+	    testsToRun.addTest(new TestVix("testStartVM"));
+	    testsToRun.addTest(new TestVix("testFileOperations"));
+	    testsToRun.addTest(new TestVix("testDirectoryOperations"));
+	    testsToRun.addTest(new TestVix("testTempFileOperations"));
+	    testsToRun.addTest(new TestVix("testListDirectories"));
+	    testsToRun.addTest(new TestVix("testListProcesses"));
+	    testsToRun.addTest(new TestVix("testOpenUrl"));
+	    testsToRun.addTest(new TestVix("testRunProcess"));
+	    testsToRun.addTest(new TestVix("testPowerOperations"));
+	    return testsToRun;
+	}
+	
+	public void testFindVMs() throws VixException {
+		VixHost vixHost = null;
 		
-		VixHost     vixHost = null;
-		VixVM       vixVM = null;
-		VixSnapshot vixRootSnapshot = null;
-		VixSnapshot vixChildSnapshot = null;
 		try {
-			// retieve VM
-			vixHost = new VixHost(VixWrapper.VIX_API_VERSION,
-			  VixWrapper.VIX_SERVICEPROVIDER_VMWARE_WORKSTATION, 
-			  vmHostName, vmHostPort, 
-			  "presumablyIgnoredUsername", "presumablyIgnoredPassword" );
-			
+			vixHost = getVixHost();
 			List vms = vixHost.findItems(VixWrapper.VIX_FIND_REGISTERED_VMS);
 			System.out.println("== start registered VMs listing");
 			for (Iterator i = vms.iterator(); i.hasNext(); ) {
@@ -127,7 +172,21 @@ public class TestVix {
 				System.out.println("  (" + obj.getClass().getName() + ") " + obj.toString());
 			}
 			System.out.println("== end running VMs listing");
-			vixVM = vixHost.open(vmLocation);
+		} finally {
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testFindSnapshots() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+
+			VixSnapshot vixRootSnapshot = null;
+			VixSnapshot vixChildSnapshot = null;
 			
 			// snapshot management (only 1 level deep)
 			System.out.println("== start snapshot listing");
@@ -150,12 +209,39 @@ public class TestVix {
 				vixRootSnapshot.close();
 			}
 			System.out.println("== end snapshot listing");
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testStartVM() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+
 			// poweron / login
 			vixVM.powerOn(VixWrapper.VIX_VMPOWEROP_LAUNCH_GUI);
 			vixVM.waitForToolsInGuest(300);
 			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testFileOperations() throws VixException, IOException {
+		VixHost vixHost = getVixHost();
+		VixVM vixVM = getVixVM(vixHost);
+		
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
+
 			// file operations
 			// -- clear up old files first
 			if (vixVM.fileExistsInGuest("c:\\vix-guest-write.txt")) {
@@ -176,12 +262,12 @@ public class TestVix {
 					System.out.println("Deletion of directory failed");
 				}
 			}
-
+	
 			File hostFile1 = new File("c:\\vix-host-source.txt");
 			File hostFile2 = new File("c:\\vix-host-dest.txt");
 			if (hostFile1.exists()) { hostFile1.delete(); }
 			if (hostFile2.exists()) { hostFile2.delete(); }
-
+	
 			// perform a copy to the guest VM
 			PrintWriter pw = new PrintWriter(new FileOutputStream(hostFile1));
 			pw.println("This is a text file");
@@ -211,7 +297,22 @@ public class TestVix {
 				}
 			}
 			hostFile1.delete();
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+
+	}
+	
+	public void testDirectoryOperations() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
+
 			// test for directory existence
 			if (!vixVM.directoryExistsInGuest("C:\\Windows")) {
 				System.out.println("Guest directory exists test failed");
@@ -219,7 +320,7 @@ public class TestVix {
 			if (vixVM.directoryExistsInGuest("C:\\slkdjksdj")) {
 				System.out.println("Guest directory non-existence test failed");
 			}
-
+	
 			vixVM.createDirectoryInGuest("c:\\vix-directory");
 			if (!vixVM.directoryExistsInGuest("c:\\vix-directory")) {
 				System.out.println("Create directory in guest failed");
@@ -229,7 +330,21 @@ public class TestVix {
 					System.out.println("Deletion of directory failed");
 				}
 			}
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testTempFileOperations() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
+
 			String tempFilename = vixVM.createTempFileInGuest();
 			System.out.println("Created temp file '" + tempFilename + "'");
 			if (!vixVM.fileExistsInGuest(tempFilename)) {
@@ -240,7 +355,20 @@ public class TestVix {
 					System.out.println("Deletion of temp file failed");
 				}
 			}
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testSharedFolders() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+
 			int numSharedFolders = vixVM.getNumSharedFolders();
 			System.out.println("Number of shared folders: " + numSharedFolders);
 			System.out.println("== start shared folder listing");
@@ -256,7 +384,7 @@ public class TestVix {
 				}
 			}
 			System.out.println("== end shared folder listing");
-
+	
 			if (removeVixShare) {
 				System.out.println("Removing share 'VixShare'");
 				vixVM.removeSharedFolder("VixShare");
@@ -274,7 +402,21 @@ public class TestVix {
 			localShare.mkdir();
 			vixVM.enableSharedFolders(true);
 			vixVM.addSharedFolder("VixShare", "c:\\vix-shared-folder", VixWrapper.VIX_SHAREDFOLDER_WRITE_ACCESS);
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testListDirectories() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
+
 			// directory list
 			List directoryList = vixVM.listDirectoryInGuest("C:\\");
 			System.out.println("== start directory listing");
@@ -285,6 +427,20 @@ public class TestVix {
 				  "flags=" + vixFile.getFileFlags()); 
 			}
 			System.out.println("== end directory listing");
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testListProcesses() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
 
 			// process list
 			List processList = vixVM.listProcessesInGuest();
@@ -298,16 +454,40 @@ public class TestVix {
 				  "command='" + vixProcess.getCommand() + "'"); 
 			}
 			System.out.println("== end process listing");
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testOpenUrl() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
 
-
-			vixVM.logoutFromGuest();
-			
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+		
 			// need console for web browsing & console processes
 			vixVM.loginInGuest(VixWrapper.VIX_CONSOLE_USER_NAME, null);
 			
 			// web browsing
 			vixVM.openUrlInGuest("http://www.google.com");
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testRunProcess() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+			vixVM.loginInGuest(VixWrapper.VIX_CONSOLE_USER_NAME, null);
+
 			// processes
 			vixVM.copyFileFromHostToGuest("c:\\cygwin\\bin\\cygwin1.dll", "c:\\cygwin1.dll");
 			vixVM.copyFileFromHostToGuest("..\\exe\\sleep.exe", "c:\\sleep.exe");
@@ -325,13 +505,18 @@ public class TestVix {
 				System.out.println("runProgramInGuest() failed");
 			}
 			
-
+	
 			startTime = System.currentTimeMillis();
 			process = vixVM.runProgramInGuest("c:\\sleep.exe", "3 5", 
 				VixWrapper.VIX_RUNPROGRAM_RETURN_IMMEDIATELY);
-			Thread.sleep(500);
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException ie) {
+				// safe to ignore
+			}
+			
 			boolean foundProcess = false;
-			processList = vixVM.listProcessesInGuest();
+			List processList = vixVM.listProcessesInGuest();
 			for (Iterator i = processList.iterator(); i.hasNext(); ) {
 				VixProcess vixProcess = (VixProcess) i.next();
 				if (vixProcess.getPid()==process.getPid()) {
@@ -363,7 +548,20 @@ public class TestVix {
 			System.out.println("Measured elapsed time (" + elapsed + " msec)");
 			
 			vixVM.logoutFromGuest();
-			
+		} finally {
+			if (vixVM!=null) { vixVM.close(); }	
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+	public void testPowerOperations() throws VixException {
+		VixHost vixHost = null;
+		VixVM vixVM = null;
+
+		try {
+			vixHost = getVixHost();
+			vixVM = getVixVM(vixHost);
+
 			System.out.println("Suspending VM");
 			vixVM.suspend();
 			System.out.println("VM suspended, powering on VM");
@@ -372,10 +570,15 @@ public class TestVix {
 			vixVM.reset();
 			System.out.println("VM reset; powering off VM");
 			vixVM.powerOff();
-			
 		} finally {
 			if (vixVM!=null) { vixVM.close(); }	
 			if (vixHost!=null) { vixHost.close(); }
 		}
 	}
+	
+	
+    public void main(String args[]) throws VixException, InterruptedException, IOException {
+    	junit.textui.TestRunner.run(suite());
+        return;
+    }
 }
