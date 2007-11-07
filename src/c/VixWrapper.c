@@ -187,6 +187,21 @@ void throwVixException(JNIEnv *env, int errorCode)
   (*env)->Throw(env, (jthrowable) newException);
 }
 
+/** Create and throw a NullPointerException
+ *
+ * @param env JNI environment
+ * @param errorCode the VIX errorCode to associate with this exception
+ */
+void throwNullPointerException(JNIEnv *env, char *text)
+{
+  jclass vixExceptionClass = (*env)->FindClass(env, "java/lang/NullPointerException");
+  jmethodID constructorMethodId = (*env)->GetMethodID(env, vixExceptionClass, "<init>" , "(Ljava/lang/String;)V");
+  jstring exceptionText = (*env)->NewStringUTF(env, (const char *) text);
+  jobject newException = (*env)->NewObject(env, vixExceptionClass, constructorMethodId, exceptionText);
+  (*env)->Throw(env, (jthrowable) newException);
+}
+
+
 /** Return a list item (items within the list must always be Integers for this to work).
  * Bad things will happen if this exceeds the known size of the list, or if other types of objects
  * are supplied.
@@ -325,7 +340,7 @@ jobject createPropertyList(JNIEnv *env, char *apiCall, int size, VixPropertyType
 				break;
 
 			case VIX_PROPERTYTYPE_BLOB:
-				snprintf(dbgBuffer, 100, "%s: Returning bloc property", apiCall);
+				snprintf(dbgBuffer, 100, "%s: Returning blob property", apiCall);
 			    logDebug(env, dbgBuffer);
 				(*env)->CallBooleanMethod(env, resultList, addMethodId, createBlob(env, props[i].blobValue));
 				// TODO: release memory
@@ -412,6 +427,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixHost_1Connect
    jobject propertyListHandle, jobject callbackProc, jobject clientData)
 {
     logDebug(env, "VixHost_Connect begin");
+    if ((*env)->ExceptionOccurred()) { return; }
 
     char *hostNameChars = (char *) 0 ;
     char *userNameChars = (char *) 0 ;
