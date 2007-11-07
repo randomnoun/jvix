@@ -1,0 +1,14 @@
+jvix requires the vmware VIX API Dlls, the Cygwin gcc compiler and a Java1.4 compiler. 
+It was developed using Eclipse 3.3, so if you wish to use the .project files to compile 
+this application, you should probably download these from:
+
+  Cygwin:  http://www.cygwin.com/
+  Eclipse: http://www.eclipse.org/
+  VIX api: http://www.vmware.com/support/developer/
+    
+To compile, open this project in eclipse, right-click on the build.xml file, select 
+'Run As'->'Ant build', select the 'all' task and click OK.
+
+This will create a 'jvix.jar' in the build/jar folder, and a 'jvix.dll' file in the build/dll
+folder. Run the net.sf.jvix.test.TestVixWrapper class to see it in action.
+
