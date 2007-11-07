@@ -28,7 +28,9 @@ import org.apache.log4j.PropertyConfigurator;
 
 /**
  * JVIX Java object API test. This class exercises most of the jvix methods in 
- * the OO interface (and therefore will also test the underlying JNI code).  
+ * the OO interface (and therefore will also test the underlying JNI code). Configuration
+ * properties are retrieved from the property file located at 
+ * "resources/properties/" + machineName + "-" + username + ".properties".
  * 
  * @author knoxg
  * @version $Id$
@@ -49,6 +51,9 @@ public class TestVix extends TestCase {
 	
 	/** Default password for privileged tasks in this vmware machine */
 	public static final String VM_LOGIN_PASSWORD = "abc123";
+	
+	/** Displays extra information if this is the first run of this class */
+	private static boolean firstRun = true;
 
 	// set defaults
 	/** Actual VM location used in tests */
@@ -85,7 +90,9 @@ public class TestVix extends TestCase {
 		PropertyConfigurator.configure(log4jProps);
 
 		Logger logger = Logger.getLogger("net.sf.jvix.VixWrapper");
-		logger.debug("VixWrapper debug logger enabled");
+		if (firstRun) {
+			logger.debug("VixWrapper debug logger enabled");
+		}
 
 		// load properties for this host/username
 		String machineName;
@@ -96,7 +103,7 @@ public class TestVix extends TestCase {
 		}
 		String username = System.getProperty("user.name");
 		String propsFile = "resources/properties/" + machineName + "-" + username + ".properties"; 
-		logger.info("Loading properties from '" + propsFile + "'");
+		if (firstRun) { logger.info("Loading properties from '" + propsFile + "'"); }
 		InputStream is = TestVix.class.getClassLoader().getResourceAsStream(propsFile);
 		if (is==null) {
 			logger.info("No properties file found; using defaults");
@@ -114,12 +121,16 @@ public class TestVix extends TestCase {
 		//String vmHost = "monk";
 		//int vmHostPort = 0;  // 902 = default
 		
-		System.out.println("TextVix started");
-		System.out.println("VM Hostname: " + vmHostName);
-		System.out.println("VM Hostport: " + vmHostPort);
-		System.out.println("VM Location: " + vmLocation);
-		System.out.println("VM Login username: " + vmLoginUsername);
-		System.out.println("VM Login password: " + vmLoginPassword);
+		if (firstRun) {
+			System.out.println("TextVix started");
+			System.out.println("VM Hostname: " + vmHostName);
+			System.out.println("VM Hostport: " + vmHostPort);
+			System.out.println("VM Location: " + vmLocation);
+			System.out.println("VM Login username: " + vmLoginUsername);
+			System.out.println("VM Login password: " + vmLoginPassword);
+		}
+		firstRun = false;
+		
 	}
 
 	/** Return a new VixHost object for use in a test */
@@ -577,7 +588,7 @@ public class TestVix extends TestCase {
 	}
 	
 	
-    public void main(String args[]) throws VixException, InterruptedException, IOException {
+    public static void main(String args[]) throws VixException, InterruptedException, IOException {
     	junit.textui.TestRunner.run(suite());
         return;
     }
