@@ -18,7 +18,7 @@
       
         jdkDir:    location of a Java JDK
                    required for JNI includes; 
-                   defaults to "C:/Java/j2sdk1.4.2_15"
+                   defaults to "C:/Java/jdk1.6.0_03"
       
         vixDir:    location of the VIX directory
                    defaults to "C:/Program Files/VMware/VMware VIX"
@@ -26,7 +26,8 @@
         cygwinDir: location of cygwin (for gcc etc)
                    defaults to "C:/cygwin"
                    
-        bin.cvs:   location of a WSAD/Eclipse-compatible CVS executable
+        bin.cvs:   location of a WSAD/Eclipse-compatible CVS executable 
+                   (NB: the one bundled with cygwin isn't)
         		   defaults to "C:/Program Files/CVSNT/cvs.exe"
         
       Feel free to override any others.
@@ -43,7 +44,7 @@
     <property name="windowsDir" value="C:/WINDOWS" />
     <property name="cygwinInstallDir" value="C:/cygwin"/>
     <property name="vixDir" value="C:/Program Files/VMware/VMware VIX" />
-	<property name="jdkDir" value="C:/Java/j2sdk1.4.2_15" />
+	<property name="jdkDir" value="C:/Java/jdk1.6.0_03" />
 	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
 	<property name="bin.pscp" value="C:/Program Files/PuTTY/pscp.exe" />
 	
@@ -378,9 +379,33 @@ and then hit "Y"
 		</exec>
 	</target>
 
+	<target name="junit" depends="buildJvixJar" description="Run junit tests and generate XML and HTML reports">
+		<junit fork="yes" printsummary="no" haltonfailure="no" dir="${basedir}/build/jni">
+	    <batchtest fork="yes" todir="build/junit" >
+	      <fileset dir="build/class">
+	        <!-- <include name="**/*Test.class" /> -->
+	      	<include name="**/TestVix.class" />
+	      </fileset>
+	    </batchtest>
+	    <formatter type="xml" />
+        <classpath>
+          <pathelement location="build/class" />
+          <path refid="classpath.run" />
+        </classpath>
+		<sysproperty key="java.library.path" value="${basedir}/build/jni" />
+	  </junit>
+
+	  <junitreport todir="build/junit">
+	    <fileset dir="build/junit">
+	      <include name="TEST-*.xml" />
+	    </fileset>
+	    <report todir="build/junit" />
+	  </junitreport>
+	</target>
+	
 	<target name="emma" depends="buildJvixJar">
 
-	  <!-- create instrumented MessageManager classes -->
+	  <!-- create instrumented jvix classes -->
 	  <emma enabled="true" >
         <instr instrpathref="classpath.run"
              destdir="${basedir}/build/emma/class"	
@@ -392,7 +417,7 @@ and then hit "Y"
         </instr>
       </emma>
      
-      <!-- create instrumented meridian classes (not used in test below, but handy) -->
+      <!-- create instrumented jvix classes -->
       <copy file="build/jar/jvix.jar" tofile="build/jar/jvix-emma.jar" />
 	  <emma enabled="true" >
         <instr instrpath="build/jar/jvix-emma.jar"
@@ -428,7 +453,7 @@ and then hit "Y"
 	</target>
 	
     <target name="doccheck" 
-      description="Runs the doccheck javadoc tool over the MessageManager source, generating an HTML report"
+      description="Runs the doccheck javadoc tool over the jvix source, generating an HTML report"
     >
 	  <mkdir dir="${basedir}/build/doccheck" />
       <javadoc
