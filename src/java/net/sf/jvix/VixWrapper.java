@@ -863,22 +863,16 @@ public class VixWrapper {
   /** This function runs a script in the guest operating system. 
    *
     <ul>
-    <li> This function runs the script in the guest operating system.
-    <li> The current working directory for the script executed in the guest is not defined.
+    <li>This function runs the script in the guest operating system.
+    <li>The current working directory for the script executed in the guest is not defined.
     Absolute paths should be used for files in the guest, including the path
     to the interpreter, and any files referenced in the script text.
-    <li> You must call
-    VixVM_LoginInGuest()
-    before calling this function.
-    <li> If the options parameter is 0, this function will
-    report completion to the job handle
+    <li> You must call VixVM_LoginInGuest() before calling this function.
+    <li> If the options parameter is 0, this function will report completion to the job handle
     when the program exits in the guest operating system.
-    Alternatively, you can pass
-    VIX_RUNPROGRAM_RETURN_IMMEDIATELY
-    as the
+    Alternatively, you can pass VIX_RUNPROGRAM_RETURN_IMMEDIATELY as the
     value of the options parameter, and this function
-    reports completion to the job handle
-    as soon as the program starts in the guest.
+    reports completion to the job handle as soon as the program starts in the guest.
     <li> When the job is signaled, the following properties will be available on
     the returned job handle:
     <ul>
@@ -897,7 +891,7 @@ public class VixWrapper {
    * @param propertyListHandle Must be VIX_INVALID_HANDLE. 
    * @param callbackProc A callback function that will be invoked when the operation is complete. 
    * @param clientData A parameter that will be passed to the callbackProc function. 
-     * 
+   * 
    * @return A job handle that describes the state of this asynchronous operation
    */
   public static native VixHandle VixVM_RunScriptInGuest(VixHandle vmHandle,
@@ -909,10 +903,7 @@ public class VixWrapper {
    * in the guest operating system. VMware Tools is a collection of services that run 
    * in the guest. 
    * 
-   * <ul>
-    <li> This function 
-    signals the job
-    when VMware Tools has successfully started
+   * <ul><li> This function signals the job when VMware Tools has successfully started
     in the guest operating system. VMware Tools is a collection of services
     that run in the guest.
     <li> VMware Tools must be installed and running for some Vix functions to operate
@@ -920,9 +911,7 @@ public class VixWrapper {
     or if the virtual machine is not powered on, this function reports an error
     to the job object.
     <li> The VIX_PROPERTY_VM_TOOLS_STATE property of the virtual machine handle is
-    undefined until 
-    VixVM_WaitForToolsInGuest()
-    reports that VMware Tools is running.
+    undefined until VixVM_WaitForToolsInGuest() reports that VMware Tools is running.
     </ul>
    * 
    * @param vmHandle Identifies a virtual machine. Call VixVM_Open() to create a virtual machine handle. 
