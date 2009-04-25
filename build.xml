@@ -5,6 +5,9 @@
       Ant build settings
       ==================
        
+      IMPORTANT: If you don't have c:\cygwin\bin in your system PATH, then
+      gcc fails silently. 
+       
       If you are working on this in a team environment, you may wish
       to create a file in the src/resources/properties folder with a filename
       set to "computerName-userName.properties". Any properties 
@@ -43,12 +46,16 @@
     <!-- deployment imports (override in ../src/resources/properties folder) -->
     <property name="windowsDir" value="C:/WINDOWS" />
     <property name="cygwinInstallDir" value="C:/cygwin"/>
-    <property name="vixDir" value="C:/Program Files/VMware/VMware VIX" />
-	<property name="jdkDir" value="C:/Java/jdk1.6.0_03" />
+    <property name="vixDir"          value="C:/Program Files/VMware/VMware VIX" />
+	<!-- in latest VIX, must use ws-5 for crypto libs -->
+	<property name="vixCryptoLibDir" value="C:/Program Files/VMware/VMware VIX/ws-5/32bit" />
+	<property name="vixLibDir"       value="C:/Program Files/VMware/VMware VIX/ws-5/32bit" />
+	<property name="jdkDir" value="C:/Java/jdk1.6.0_13" />
 	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
 	<property name="bin.pscp" value="C:/Program Files/PuTTY/pscp.exe" />
 	
-    <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc" />
+	<!-- this needs to be the gcc executable, not a symlink -->
+    <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc-3" />
     <property name="bin.bash" value="${cygwinInstallDir}/bin/bash" />
 	<property name="bin.zip" value="${cygwinInstallDir}/bin/zip" />
 
@@ -115,7 +122,7 @@
       -->
 
 	<target name="all" description="Complete build"
-		depends="buildSleep, buildVixWrapper, buildJvixJar" >
+		depends="buildSleep, buildClasses, buildVixWrapper, buildJvixJar" >
 		
 	</target>
 	
@@ -211,15 +218,15 @@
 
 	<target name="buildVixWrapper" depends="_init" description="Create VIX JNI wrapper">
       <!-- would be good to statically compile these once I google how to do it -->
-	  <copy file="${vixDir}/ws-2/32bit/iconv.dll" tofile="build/jni/iconv.dll"/>
-	  <copy file="${vixDir}/ws-2/32bit/libeay32.dll" tofile="build/jni/libeay32.dll"/>
-	  <copy file="${vixDir}/ws-2/32bit/libxml2.dll" tofile="build/jni/libxml2.dll"/>
-	  <copy file="${vixDir}/ws-2/32bit/ssleay32.dll" tofile="build/jni/ssleay32.dll"/>	  
-	  <copy file="${vixDir}/ws-2/32bit/vix.dll" tofile="build/jni/vix.dll"/>
-	  <copy file="${vixDir}/ws-2/32bit/vmcryptolib.dll" tofile="build/jni/vmcryptolib.dll"/>
-	  <copy file="${vixDir}/ws-2/32bit/zlib1.dll" tofile="build/jni/zlib1.dll"/>
-	  <copy file="${vixDir}/ws-2/32bit/vix.lib" tofile="build/jni/vix.lib"/>
-	  <copy file="${vixDir}/ws-2/32bit/fipsSigs.dat" tofile="build/jni/fipsSigs.dat"/>
+	  <copy file="${vixLibDir}/iconv.dll" tofile="build/jni/iconv.dll"/>
+	  <copy file="${vixCryptoLibDir}/libeay32.dll" tofile="build/jni/libeay32.dll"/>
+	  <copy file="${vixLibDir}/libxml2.dll" tofile="build/jni/libxml2.dll"/>
+	  <copy file="${vixCryptoLibDir}/ssleay32.dll" tofile="build/jni/ssleay32.dll"/>	  
+	  <copy file="${vixLibDir}/vix.dll" tofile="build/jni/vix.dll"/>
+	  <copy file="${vixCryptoLibDir}/vmcryptolib.dll" tofile="build/jni/vmcryptolib.dll"/>
+	  <copy file="${vixLibDir}/zlib1.dll" tofile="build/jni/zlib1.dll"/>
+	  <copy file="${vixLibDir}/vix.lib" tofile="build/jni/vix.lib"/>
+	  <copy file="${vixLibDir}/fipsSigs.dat" tofile="build/jni/fipsSigs.dat"/>
 	  <exec executable="${jdkDir}\bin\javah" >
   	    <arg value="-classpath" />
   	    <arg value="build/class" />
@@ -227,23 +234,25 @@
 	    <arg value="build/h/VixWrapper.h" />
 	    <arg value="net.sf.jvix.VixWrapper" />
       </exec>
+	  <echo message="running ${bin.gcc} -v -mno-cygwin -I../h -I${jdkDir}/include -I${jdkDir}/include/win32 -I${vixDir} -L${vixLibDir} -Wl,--add-stdcall-alias -shared -D_M_IX86 -DNT -o jvix.dll ../../src/c/VixWrapper.c ${vixDir}/ws-5/32bit/vix.dll"/>
 	  <exec executable="${bin.gcc}" 
         dir="build/jni" >
 	    <arg value="-v" />
 	    <arg value="-mno-cygwin" />
+	    <arg value="-Wl,--add-stdcall-alias" />
+	  	<arg value="--verbose"/>
+	    <arg value="-shared" />
+	    <arg value="-D_M_IX86" />
+	    <arg value="-DNT" />
 	    <arg value="-I../h" />
 	    <arg value="-I${jdkDir}/include" />
 	  	<arg value="-I${jdkDir}/include/win32" />
 	    <arg value="-I${vixDir}" /> 
-	    <arg value="-L${vixDir}/ws-2/32bit" />	    
-	    <arg value="-Wl,--add-stdcall-alias" />
-	    <arg value="-shared" />
-	    <arg value="-D_M_IX86" />
-	    <arg value="-DNT" />
+	    <arg value="-L${vixLibDir}" />	    
 	    <arg value="-o" />
 	    <arg value="jvix.dll" />
 	    <arg value="../../src/c/VixWrapper.c" />
-	    <arg value="${vixDir}/ws-2/32bit/vix.dll" />
+	    <arg value="${vixLibDir}/vix.dll" />
 	  </exec>
 	  <copy file="build/jni/jvix.dll" tofile="build/dll/jvix.dll"/>
 	</target>

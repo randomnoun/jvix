@@ -46,6 +46,12 @@
  * @version $Id$
  */
 
+/* to prevent conflicting ssize_t declaration between:
+     /usr/lib/gcc/i686-pc-mingw32/3.4.4/../../../../i686-pc-mingw32/include/sys/types.h:104
+     C:/Program Files/VMware/VMware VIX/vm_basic_types.h:721
+*/
+#define _SSIZE_T_DECLARED
+
 #include "vix.h"
 #include "jni.h"
 
@@ -427,7 +433,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixHost_1Connect
    jobject propertyListHandle, jobject callbackProc, jobject clientData)
 {
     logDebug(env, "VixHost_Connect begin");
-    if ((*env)->ExceptionOccurred()) { return; }
+    if ((*env)->ExceptionOccurred(env)) { return; }
 
     char *hostNameChars = (char *) 0 ;
     char *userNameChars = (char *) 0 ;
