@@ -234,7 +234,6 @@
 	    <arg value="build/h/VixWrapper.h" />
 	    <arg value="net.sf.jvix.VixWrapper" />
       </exec>
-	  <echo message="running ${bin.gcc} -v -mno-cygwin -I../h -I${jdkDir}/include -I${jdkDir}/include/win32 -I${vixDir} -L${vixLibDir} -Wl,--add-stdcall-alias -shared -D_M_IX86 -DNT -o jvix.dll ../../src/c/VixWrapper.c ${vixDir}/ws-5/32bit/vix.dll"/>
 	  <exec executable="${bin.gcc}" 
         dir="build/jni" >
 	    <arg value="-v" />
