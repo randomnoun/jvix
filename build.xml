@@ -47,9 +47,9 @@
     <property name="windowsDir" value="C:/WINDOWS" />
     <property name="cygwinInstallDir" value="C:/cygwin"/>
     <property name="vixDir"          value="C:/Program Files/VMware/VMware VIX" />
-	<!-- in latest VIX, must use ws-5 for crypto libs -->
-	<property name="vixCryptoLibDir" value="C:/Program Files/VMware/VMware VIX/ws-5/32bit" />
-	<property name="vixLibDir"       value="C:/Program Files/VMware/VMware VIX/ws-5/32bit" />
+	<!-- in latest VIX, must use Workstation-6.5.2 for crypto libs -->
+	<property name="vixCryptoLibDir" value="C:/Program Files/VMware/VMware VIX/Workstation-6.5.2/32bit" />
+	<property name="vixLibDir"       value="C:/Program Files/VMware/VMware VIX/Workstation-6.5.2/32bit" />
 	<property name="jdkDir" value="C:/Java/jdk1.6.0_13" />
 	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
 	<property name="bin.pscp" value="C:/Program Files/PuTTY/pscp.exe" />
