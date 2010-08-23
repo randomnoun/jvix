@@ -46,11 +46,12 @@
     <!-- deployment imports (override in ../src/resources/properties folder) -->
     <property name="windowsDir" value="C:/WINDOWS" />
     <property name="cygwinInstallDir" value="C:/cygwin"/>
-    <property name="vixDir"          value="C:/Program Files/VMware/VMware VIX" />
-	<!-- in latest VIX, must use Workstation-6.5.2 for crypto libs -->
-	<property name="vixCryptoLibDir" value="C:/Program Files/VMware/VMware VIX/Workstation-6.5.2/32bit" />
-	<property name="vixLibDir"       value="C:/Program Files/VMware/VMware VIX/Workstation-6.5.2/32bit" />
-	<property name="jdkDir" value="C:/Java/jdk1.6.0_13" />
+    <property name="vixDir"             value="C:/Program Files/VMware/VMware VIX" />
+	<!-- in latest VIX, must use Workstation-7.1.0 for crypto libs -->
+	<property name="vmwareResourcesDir" value="C:/Program Files/VMware/VMware Workstation/Resources" />
+	<property name="vixCryptoLibDir"    value="C:/Program Files/VMware/VMware VIX/Workstation-7.1.0/32bit" />
+	<property name="vixLibDir"          value="C:/Program Files/VMware/VMware VIX/Workstation-7.1.0/32bit" />
+	<property name="jdkDir" value="C:/Java/jdk1.6.0_18" />
 	<property name="bin.cvs" value="C:/Program Files/CVSNT/cvs.exe" />
 	<property name="bin.pscp" value="C:/Program Files/PuTTY/pscp.exe" />
 	
@@ -223,10 +224,19 @@
 	  <copy file="${vixLibDir}/libxml2.dll" tofile="build/jni/libxml2.dll"/>
 	  <copy file="${vixCryptoLibDir}/ssleay32.dll" tofile="build/jni/ssleay32.dll"/>	  
 	  <copy file="${vixLibDir}/vix.dll" tofile="build/jni/vix.dll"/>
-	  <copy file="${vixCryptoLibDir}/vmcryptolib.dll" tofile="build/jni/vmcryptolib.dll"/>
+	  <!--  <copy file="${vixCryptoLibDir}/vmcryptolib.dll" tofile="build/jni/vmcryptolib.dll"/>  -->
 	  <copy file="${vixLibDir}/zlib1.dll" tofile="build/jni/zlib1.dll"/>
 	  <copy file="${vixLibDir}/vix.lib" tofile="build/jni/vix.lib"/>
-	  <copy file="${vixLibDir}/fipsSigs.dat" tofile="build/jni/fipsSigs.dat"/>
+	  <!--  <copy file="${vixLibDir}/fipsSigs.dat" tofile="build/jni/fipsSigs.dat"/> -->
+	  <copy file="${vixLibDir}/glib-2.0.dll" tofile="build/jni/glib-2.0.dll"/>
+	  <copy file="${vixLibDir}/gobject-2.0.dll" tofile="build/jni/gobject-2.0.dll"/>
+	  <copy file="${vixLibDir}/gvmomi.dll" tofile="build/jni/gvmomi.dll"/>
+	  <copy file="${vixLibDir}/intl.dll" tofile="build/jni/intl.dll"/>
+	  <copy file="${vixLibDir}/libcurl.dll" tofile="build/jni/libcurl.dll"/>
+	  <copy file="${vixLibDir}/liblber.dll" tofile="build/jni/liblber.dll"/>
+	  <copy file="${vixLibDir}/libldap_r.dll" tofile="build/jni/libldap_r.dll"/>
+	  <copy file="${vmwareResourcesDir}/msvcr80.dll" tofile="build/jni/msvcr80.dll"/>
+	  
 	  <exec executable="${jdkDir}\bin\javah" >
   	    <arg value="-classpath" />
   	    <arg value="build/class" />

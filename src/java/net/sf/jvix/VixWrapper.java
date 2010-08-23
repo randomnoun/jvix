@@ -140,9 +140,15 @@ public class VixWrapper {
   public final static int VIX_VM_SUPPORT_TOOLS_INSTALL        = 0x0004;
   public final static int VIX_VM_SUPPORT_HARDWARE_UPGRADE     = 0x0008; 
 
-  public final static String VIX_ANONYMOUS_USER_NAME        = "__VMware_Vix_Guest_User_Anonymous__";
-  public final static String VIX_ADMINISTRATOR_USER_NAME    = "__VMware_Vix_Guest_User_Admin__";
-  public final static String VIX_CONSOLE_USER_NAME          = "__VMware_Vix_Guest_Console_User__";
+  /*
+   * VIX_ADMINISTRATOR_USER_NAME and VIX_CONSOLE_USER_NAME are no longer
+   * supported. If your code includes references to these constants please
+   * update your code to use a valid guest username and password when calling 
+   * VixVM_LoginInGuest(). 
+   */
+  //public final static String VIX_ANONYMOUS_USER_NAME        = "__VMware_Vix_Guest_User_Anonymous__";
+  //public final static String VIX_ADMINISTRATOR_USER_NAME    = "__VMware_Vix_Guest_User_Admin__";
+  //public final static String VIX_CONSOLE_USER_NAME          = "__VMware_Vix_Guest_Console_User__";
 
   /** VixFindItemType constant for use in {@link #VixHost_FindItems(VixHandle, VixFindItemType, VixHandle, int, VixEventProc, Object)} */
   public final static int VIX_FIND_RUNNING_VMS         = 1;

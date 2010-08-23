@@ -82,6 +82,20 @@ public class VixException extends Exception {
 	public final static int VIX_E_UNRECOGNIZED_COMMAND_IN_GUEST          = 3025;
 	public final static int VIX_E_CONSOLE_GUEST_OPERATIONS_PROHIBITED    = 3026;
 	public final static int VIX_E_MUST_BE_CONSOLE_USER                   = 3027;
+	public final static int VIX_E_VMX_MSG_DIALOG_AND_NO_UI               = 3028;
+	public final static int VIX_E_NOT_ALLOWED_DURING_VM_RECORDING        = 3029;
+	public final static int VIX_E_NOT_ALLOWED_DURING_VM_REPLAY           = 3030;
+	public final static int VIX_E_OPERATION_NOT_ALLOWED_FOR_LOGIN_TYPE   = 3031;
+	public final static int VIX_E_LOGIN_TYPE_NOT_SUPPORTED               = 3032;
+	public final static int VIX_E_EMPTY_PASSWORD_NOT_ALLOWED_IN_GUEST    = 3033;
+	public final static int VIX_E_INTERACTIVE_SESSION_NOT_PRESENT        = 3034;
+	public final static int VIX_E_INTERACTIVE_SESSION_USER_MISMATCH      = 3035;
+	public final static int VIX_E_UNABLE_TO_REPLAY_VM                    = 3039;
+	public final static int VIX_E_CANNOT_POWER_ON_VM                     = 3041;
+	public final static int VIX_E_NO_DISPLAY_SERVER                      = 3043;
+	public final static int VIX_E_VM_NOT_RECORDING                       = 3044;
+	public final static int VIX_E_VM_NOT_REPLAYING                       = 3045;
+
 
 	   /* VM Errors */ 
 	public final static int VIX_E_VM_NOT_FOUND                           = 4000;
@@ -96,10 +110,16 @@ public class VixException extends Exception {
 	public final static int VIX_E_INVALID_PROPERTY_VALUE                 = 6001;
 	public final static int VIX_E_READ_ONLY_PROPERTY                     = 6002;
 	public final static int VIX_E_MISSING_REQUIRED_PROPERTY              = 6003;
-
+	public final static int VIX_E_INVALID_SERIALIZED_DATA                = 6004;
+	public final static int VIX_E_PROPERTY_TYPE_MISMATCH                 = 6005;
 	   /* Completion Errors */
 	public final static int VIX_E_BAD_VM_INDEX                           = 8000;
 
+	   /* Message errors */
+	public final static int VIX_E_INVALID_MESSAGE_HEADER                 = 10000;
+	public final static int VIX_E_INVALID_MESSAGE_BODY                   = 10001;
+
+	
 	   /* Snapshot errors */
 	public final static int VIX_E_SNAPSHOT_INVAL                         = 13000;
 	public final static int VIX_E_SNAPSHOT_DUMPER                        = 13001;
@@ -119,14 +139,114 @@ public class VixException extends Exception {
 	public final static int VIX_E_SNAPSHOT_DUPLICATEDDISK                = 13015;
 	public final static int VIX_E_SNAPSHOT_INDEPENDENTDISK               = 13016;
 	public final static int VIX_E_SNAPSHOT_NONUNIQUE_NAME                = 13017;
+	public final static int VIX_E_SNAPSHOT_MEMORY_ON_INDEPENDENT_DISK    = 13018;
+	public final static int VIX_E_SNAPSHOT_MAXSNAPSHOTS                  = 13019;
+	public final static int VIX_E_SNAPSHOT_MIN_FREE_SPACE                = 13020;
+	public final static int VIX_E_SNAPSHOT_RRSUSPEND                     = 13021;
 
+	   /* Host Errors */
+	public final static int VIX_E_HOST_DISK_INVALID_VALUE                = 14003;
+	public final static int VIX_E_HOST_DISK_SECTORSIZE                   = 14004;
+	public final static int VIX_E_HOST_FILE_ERROR_EOF                    = 14005;
+	public final static int VIX_E_HOST_NETBLKDEV_HANDSHAKE               = 14006;
+	public final static int VIX_E_HOST_SOCKET_CREATION_ERROR             = 14007;
+	public final static int VIX_E_HOST_SERVER_NOT_FOUND                  = 14008;
+	public final static int VIX_E_HOST_NETWORK_CONN_REFUSED              = 14009;
+	public final static int VIX_E_HOST_TCP_SOCKET_ERROR                  = 14010;
+	public final static int VIX_E_HOST_TCP_CONN_LOST                     = 14011;
+	public final static int VIX_E_HOST_NBD_HASHFILE_VOLUME               = 14012;
+	public final static int VIX_E_HOST_NBD_HASHFILE_INIT                 = 14013;
+	   
+	   /* Disklib errors */
+	public final static int VIX_E_DISK_INVAL                             = 16000;
+	public final static int VIX_E_DISK_NOINIT                            = 16001;
+	public final static int VIX_E_DISK_NOIO                              = 16002;
+	public final static int VIX_E_DISK_PARTIALCHAIN                      = 16003;
+	public final static int VIX_E_DISK_NEEDSREPAIR                       = 16006;
+	public final static int VIX_E_DISK_OUTOFRANGE                        = 16007;
+	public final static int VIX_E_DISK_CID_MISMATCH                      = 16008;
+	public final static int VIX_E_DISK_CANTSHRINK                        = 16009;
+	public final static int VIX_E_DISK_PARTMISMATCH                      = 16010;
+	public final static int VIX_E_DISK_UNSUPPORTEDDISKVERSION            = 16011;
+	public final static int VIX_E_DISK_OPENPARENT                        = 16012;
+	public final static int VIX_E_DISK_NOTSUPPORTED                      = 16013;
+	public final static int VIX_E_DISK_NEEDKEY                           = 16014;
+	public final static int VIX_E_DISK_NOKEYOVERRIDE                     = 16015;
+	public final static int VIX_E_DISK_NOTENCRYPTED                      = 16016;
+	public final static int VIX_E_DISK_NOKEY                             = 16017;
+	public final static int VIX_E_DISK_INVALIDPARTITIONTABLE             = 16018;
+	public final static int VIX_E_DISK_NOTNORMAL                         = 16019;
+	public final static int VIX_E_DISK_NOTENCDESC                        = 16020;
+	public final static int VIX_E_DISK_NEEDVMFS                          = 16022;
+	public final static int VIX_E_DISK_RAWTOOBIG                         = 16024;
+	public final static int VIX_E_DISK_TOOMANYOPENFILES                  = 16027;
+	public final static int VIX_E_DISK_TOOMANYREDO                       = 16028;
+	public final static int VIX_E_DISK_RAWTOOSMALL                       = 16029;
+	public final static int VIX_E_DISK_INVALIDCHAIN                      = 16030;
+	public final static int VIX_E_DISK_KEY_NOTFOUND                      = 16052; // metadata key is not found
+	public final static int VIX_E_DISK_SUBSYSTEM_INIT_FAIL               = 16053;
+	public final static int VIX_E_DISK_INVALID_CONNECTION                = 16054;
+	public final static int VIX_E_DISK_ENCODING                          = 16061;
+	public final static int VIX_E_DISK_CANTREPAIR                        = 16062;
+	public final static int VIX_E_DISK_INVALIDDISK                       = 16063;
+	public final static int VIX_E_DISK_NOLICENSE                         = 16064;
+	public final static int VIX_E_DISK_NODEVICE                          = 16065;
+	public final static int VIX_E_DISK_UNSUPPORTEDDEVICE                 = 16066;
+
+	   /* Crypto Library Errors */
+	public final static int VIX_E_CRYPTO_UNKNOWN_ALGORITHM               = 17000;
+	public final static int VIX_E_CRYPTO_BAD_BUFFER_SIZE                 = 17001;
+	public final static int VIX_E_CRYPTO_INVALID_OPERATION               = 17002;
+	public final static int VIX_E_CRYPTO_RANDOM_DEVICE                   = 17003;
+	public final static int VIX_E_CRYPTO_NEED_PASSWORD                   = 17004;
+	public final static int VIX_E_CRYPTO_BAD_PASSWORD                    = 17005;
+	public final static int VIX_E_CRYPTO_NOT_IN_DICTIONARY               = 17006;
+	public final static int VIX_E_CRYPTO_NO_CRYPTO                       = 17007;
+	public final static int VIX_E_CRYPTO_ERROR                           = 17008;
+	public final static int VIX_E_CRYPTO_BAD_FORMAT                      = 17009;
+	public final static int VIX_E_CRYPTO_LOCKED                          = 17010;
+	public final static int VIX_E_CRYPTO_EMPTY                           = 17011;
+	public final static int VIX_E_CRYPTO_KEYSAFE_LOCATOR                 = 17012;
+
+	   /* Remoting Errors. */
+	public final static int VIX_E_CANNOT_CONNECT_TO_HOST                 = 18000;
+	public final static int VIX_E_NOT_FOR_REMOTE_HOST                    = 18001;
+	public final static int VIX_E_INVALID_HOSTNAME_SPECIFICATION         = 18002;
+	    
+	/* Screen Capture Errors. */
+	public final static int VIX_E_SCREEN_CAPTURE_ERROR                   = 19000;
+	public final static int VIX_E_SCREEN_CAPTURE_BAD_FORMAT              = 19001;
+	public final static int VIX_E_SCREEN_CAPTURE_COMPRESSION_FAIL        = 19002;
+	public final static int VIX_E_SCREEN_CAPTURE_LARGE_DATA              = 19003;
+	
+	
 	/* Guest Errors */
 	public final static int VIX_E_NOT_A_FILE                             = 20001;
 	public final static int VIX_E_NOT_A_DIRECTORY                        = 20002;
 	public final static int VIX_E_NO_SUCH_PROCESS                        = 20003;
 	public final static int VIX_E_FILE_NAME_TOO_LONG                     = 20004;
 
+	   /* Tools install errors */
+	public final static int VIX_E_TOOLS_INSTALL_NO_IMAGE                 = 21000;
+	public final static int VIX_E_TOOLS_INSTALL_IMAGE_INACCESIBLE        = 21001;
+	public final static int VIX_E_TOOLS_INSTALL_NO_DEVICE                = 21002;
+	public final static int VIX_E_TOOLS_INSTALL_DEVICE_NOT_CONNECTED     = 21003;
+	public final static int VIX_E_TOOLS_INSTALL_CANCELLED                = 21004;
+	public final static int VIX_E_TOOLS_INSTALL_INIT_FAILED              = 21005;
+	public final static int VIX_E_TOOLS_INSTALL_AUTO_NOT_SUPPORTED       = 21006;
+	public final static int VIX_E_TOOLS_INSTALL_GUEST_NOT_READY          = 21007;
+	public final static int VIX_E_TOOLS_INSTALL_SIG_CHECK_FAILED         = 21008;
+	public final static int VIX_E_TOOLS_INSTALL_ERROR                    = 21009;
+	public final static int VIX_E_TOOLS_INSTALL_ALREADY_UP_TO_DATE       = 21010;
+	public final static int VIX_E_TOOLS_INSTALL_IN_PROGRESS              = 21011;
 
+	   /* Wrapper Errors */
+	public final static int VIX_E_WRAPPER_WORKSTATION_NOT_INSTALLED      = 22001;
+	public final static int VIX_E_WRAPPER_VERSION_NOT_FOUND              = 22002;
+	public final static int VIX_E_WRAPPER_SERVICEPROVIDER_NOT_FOUND      = 22003;
+	public final static int VIX_E_WRAPPER_PLAYER_NOT_INSTALLED           = 22004;
+
+	
     /* JNI Errors (invented by me) */
 	public final static int VIX_E_JNI_TOO_MANY_PROPERTIES                = 30001;
 	public final static int VIX_E_JNI_CANNOT_RETURN_UNKNOWN_PROPERTYTYPE = 30002;

@@ -41,7 +41,7 @@ public class TestVix extends TestCase {
 	public static String _revision = "$Id$";
 
 	/** Test vmware machine */
-	public static final String VM_LOCATION = "C:\\Documents and Settings\\knoxg\\My Documents\\My Virtual Machines\\test01\\Windows XP Professional.vmx";
+	public static final String VM_LOCATION = "C:\\vmware\\test01\\test01.vmx";
 	
 	/** Default host that this vmware machine resides on */
 	public static final String VM_HOST = "127.0.0.1";
@@ -149,7 +149,8 @@ public class TestVix extends TestCase {
 	/** Define a test suits to ensure the order of the tests */
 	public static Test suite() {
 	    TestSuite testsToRun = new TestSuite();
-	    testsToRun.addTest(new TestVix("testFindVMs"));
+	    testsToRun.addTest(new TestVix("testFindRegisteredVMs"));
+	    testsToRun.addTest(new TestVix("testFindRunningVMs"));
 	    testsToRun.addTest(new TestVix("testFindSnapshots"));
 	    testsToRun.addTest(new TestVix("testStartVM"));
 	    testsToRun.addTest(new TestVix("testFileOperations"));
@@ -163,7 +164,7 @@ public class TestVix extends TestCase {
 	    return testsToRun;
 	}
 	
-	public void testFindVMs() throws VixException {
+	public void testFindRegisteredVMs() throws VixException {
 		VixHost vixHost = null;
 		
 		try {
@@ -175,8 +176,24 @@ public class TestVix extends TestCase {
 				System.out.println("  (" + obj.getClass().getName() + ") " + obj.toString());
 			}
 			System.out.println("== end registered VMs listing");
-			
-			vms = vixHost.findItems(VixWrapper.VIX_FIND_RUNNING_VMS);
+		} catch (VixException ve) {
+			if (ve.getErrorCode()==VixException.VIX_E_NOT_SUPPORTED) {
+				// is OK: registered VMs are not supported in VMware Workstation  7
+			} else {
+				throw ve;
+			}
+		} finally {
+			if (vixHost!=null) { vixHost.close(); }
+		}
+	}
+	
+
+	public void testFindRunningVMs() throws VixException {
+		VixHost vixHost = null;
+		
+		try {
+			vixHost = getVixHost();
+			List vms = vixHost.findItems(VixWrapper.VIX_FIND_RUNNING_VMS);
 			System.out.println("== start running VMs listing");
 			for (Iterator i = vms.iterator(); i.hasNext(); ) {
 				Object obj = i.next();
@@ -187,6 +204,7 @@ public class TestVix extends TestCase {
 			if (vixHost!=null) { vixHost.close(); }
 		}
 	}
+
 	
 	public void testFindSnapshots() throws VixException {
 		VixHost vixHost = null;
@@ -480,7 +498,7 @@ public class TestVix extends TestCase {
 			vixVM = getVixVM(vixHost);
 		
 			// need console for web browsing & console processes
-			vixVM.loginInGuest(VixWrapper.VIX_CONSOLE_USER_NAME, null);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
 			
 			// web browsing
 			vixVM.openUrlInGuest("http://www.google.com");
@@ -497,7 +515,7 @@ public class TestVix extends TestCase {
 		try {
 			vixHost = getVixHost();
 			vixVM = getVixVM(vixHost);
-			vixVM.loginInGuest(VixWrapper.VIX_CONSOLE_USER_NAME, null);
+			vixVM.loginInGuest(vmLoginUsername, vmLoginPassword);
 
 			// processes
 			vixVM.copyFileFromHostToGuest("c:\\cygwin\\bin\\cygwin1.dll", "c:\\cygwin1.dll");
