@@ -39,9 +39,12 @@
           
 	<!-- environment imports -->
     <property environment="env"/>
+    <!-- 'COMPUTERNAME' is typically set on Windows machines, 'HOSTNAME' is set on Linux machines -->
+	<exec executable="hostname" osfamily="unix" failifexecutionfails="false" outputproperty="env.COMPUTERNAME"/>
+	<property name="env.HOSTNAME" value="${env.COMPUTERNAME}"/>
 
 	<!-- per-user properties must be specified *before* other properties -->
-    <property file="src/resources/properties/${env.COMPUTERNAME}-${user.name}.properties" />
+    <property file="src/resources/properties/${env.HOSTNAME}-${user.name}.properties" />
 
     <!-- deployment imports (override in ../src/resources/properties folder) -->
     <property name="windowsDir" value="C:/WINDOWS" />
@@ -59,6 +62,7 @@
     <property name="bin.gcc" value="${cygwinInstallDir}/bin/gcc-3" />
     <property name="bin.bash" value="${cygwinInstallDir}/bin/bash" />
 	<property name="bin.zip" value="${cygwinInstallDir}/bin/zip" />
+	<property name="osname" value="win32" />
 
 	<!-- sourceforge upload settings (override in ../src/resources/properties folder) --> 
 	<property name="sourceforge.password" value="xxxxxx" />
@@ -122,20 +126,30 @@
       *
       -->
 
+	<condition property="testOnWindows">
+		<equals arg1="${osname}" arg2="win32" />
+	</condition>
+	<condition property="testOnLinux">
+		<equals arg1="${osname}" arg2="linux64" />
+	</condition>
+
+
 	<target name="all" description="Complete build"
 		depends="buildSleep, buildClasses, buildVixWrapper, buildJvixJar" >
 		
 	</target>
 	
 	<target name="_init" description="Create directories required by other targets">
-	  <echo message="Reading build property file 'src/resources/properties/${env.COMPUTERNAME}-${user.name}.properties'" />
+	  <echo message="Reading build property file 'src/resources/properties/${env.HOSTNAME}-${user.name}.properties'" />
 	  <echo message="Creating build directory structure ..."/>
 	  <mkdir dir="build/class" />
 	  <mkdir dir="build/emma" />
 	  <mkdir dir="build/junit" />
 	  <mkdir dir="build/dist" />
       <mkdir dir="build/dll" />
+      <mkdir dir="build/lib" />
 	  <mkdir dir="build/exe" />
+	  <mkdir dir="build/bin" />
 	  <mkdir dir="build/h" />
 	  <mkdir dir="build/jar" />
 	  <mkdir dir="build/jni" />
@@ -192,7 +206,6 @@
     	
       <!-- can comment this out if not running within eclipse -->
 	  <!-- <eclipse.refreshLocal resource="jvix" /> -->
-
     </target>
     
     <target name="buildJvixJar" depends="_init, buildClasses" description="Create the jvix.jar" >
@@ -210,24 +223,25 @@
     <target name="clean" description="Clean out the ./build directories">
         <delete dir="build/class" />
         <delete dir="build/dll" />
+        <delete dir="build/lib" />
     	<delete dir="build/h" />
     	<delete dir="build/jar" />
     	<delete dir="build/jni" />
     	<delete dir="build/javadoc" />
+    	<delete dir="build/exe" />
+    	<delete dir="build/bin" />
     </target>
 
 
-	<target name="buildVixWrapper" depends="_init" description="Create VIX JNI wrapper">
+	<target name="buildVixWrapperWin32" depends="_init" description="Create VIX JNI wrapper" unless="testOnLinux">
       <!-- would be good to statically compile these once I google how to do it -->
 	  <copy file="${vixLibDir}/iconv.dll" tofile="build/jni/iconv.dll"/>
 	  <copy file="${vixCryptoLibDir}/libeay32.dll" tofile="build/jni/libeay32.dll"/>
 	  <copy file="${vixLibDir}/libxml2.dll" tofile="build/jni/libxml2.dll"/>
 	  <copy file="${vixCryptoLibDir}/ssleay32.dll" tofile="build/jni/ssleay32.dll"/>	  
 	  <copy file="${vixLibDir}/vix.dll" tofile="build/jni/vix.dll"/>
-	  <!--  <copy file="${vixCryptoLibDir}/vmcryptolib.dll" tofile="build/jni/vmcryptolib.dll"/>  -->
 	  <copy file="${vixLibDir}/zlib1.dll" tofile="build/jni/zlib1.dll"/>
 	  <copy file="${vixLibDir}/vix.lib" tofile="build/jni/vix.lib"/>
-	  <!--  <copy file="${vixLibDir}/fipsSigs.dat" tofile="build/jni/fipsSigs.dat"/> -->
 	  <copy file="${vixLibDir}/glib-2.0.dll" tofile="build/jni/glib-2.0.dll"/>
 	  <copy file="${vixLibDir}/gobject-2.0.dll" tofile="build/jni/gobject-2.0.dll"/>
 	  <copy file="${vixLibDir}/gvmomi.dll" tofile="build/jni/gvmomi.dll"/>
@@ -266,12 +280,44 @@
 	  <copy file="build/jni/jvix.dll" tofile="build/dll/jvix.dll"/>
 	</target>
 
-	<target name="buildSleep" depends="_init" description="Create the sleep executable">
+	<target name="buildVixWrapperLinux64" depends="_init" description="Create VIX JNI wrapper" unless="testOnWindows">
+	  <copy file="${vixLibDir}/libvix.so" tofile="build/jni/libvix.so"/>
+	  <exec executable="${jdkDir}\bin\javah" >
+  	    <arg value="-classpath" />
+  	    <arg value="build/class" />
+	    <arg value="-o" />
+	    <arg value="build/h/VixWrapper.h" />
+	    <arg value="net.sf.jvix.VixWrapper" />
+      </exec>
+	  <exec executable="${bin.gcc}" 
+        dir="build/jni" >
+	    <arg value="-v" />
+	    <arg value="-I../h" />
+	    <arg value="-I${vixIncludeDir}" />
+	    <arg value="-I${jdkDir}/include" />
+	    <arg value="-I${jdkDir}/include/linux" />
+	    <arg value="-L${vixLibDir}" />
+	    <arg value="../../src/c/VixWrapper.c" />
+	    <arg value="${vixLibDir}/libvix.so" />
+	    <arg value="${vixLibDir}/libgvmomi.so.0" />
+	    <arg value="-fPIC" />
+	    <arg value="-shared" />
+	    <arg value="-o" />
+	    <arg value="libjvix.so" />
+	  </exec>
+	  <copy file="build/jni/libjvix.so" tofile="build/lib/libjvix.so"/> 
+	</target>
+	
+	<target name="buildVixWrapper" depends="buildVixWrapperLinux64, buildVixWrapperWin32">
+	</target>
+
+
+	<!-- only really need to build this sleep executable for Win32 if testing on Win32 VMs -->
+	<target name="buildSleepWin32" depends="_init" description="Create the sleep executable" unless="testOnLinux">
       <!-- would be good to statically compile these once I google how to do it -->
 	  <exec executable="${bin.gcc}" 
         dir="build/jni" >
 	    <arg value="-v" />
-	    <!-- <arg value="-mno-cygwin" /> -->
 	    <arg value="-Wl,--add-stdcall-alias" />
 	    <arg value="-D_M_IX86" />
 	    <arg value="-DNT" />
@@ -282,6 +328,20 @@
 	  <copy file="build/jni/sleep.exe" tofile="build/exe/sleep.exe"/>
 	</target>
 
+	<target name="buildSleepLinux64" depends="_init" description="Create the sleep executable" unless="testOnWindows">
+      <!-- would be good to statically compile these once I google how to do it -->
+	  <exec executable="${bin.gcc}" 
+        dir="build/jni" >
+	    <arg value="-v" />
+	    <arg value="-o" />
+	    <arg value="sleep" />
+	    <arg value="../../src/c/sleep.c" />
+	  </exec>
+	  <copy file="build/jni/sleep" tofile="build/bin/sleep"/> 
+	</target>
+
+	<target name="buildSleep" depends="buildSleepWin32, buildSleepLinux64">
+	</target>
 
     <!-- additionalparam="-J-Xss20M -J-Xmx128M" -->
 	<target name="javadoc" depends="_init" description="Runs the standard java doclet over the Java source code">

@@ -340,7 +340,7 @@ jobject createPropertyList(JNIEnv *env, char *apiCall, int size, VixPropertyType
 
 			case VIX_PROPERTYTYPE_INT64:
 			    // @TODO this printf mask is probably wrong
-				snprintf(dbgBuffer, 100, "%s: Returning int64 property %d", apiCall, props[i].int64Value);
+				snprintf(dbgBuffer, 100, "%s: Returning int64 property %ld", apiCall, props[i].int64Value);
 			    logDebug(env, dbgBuffer);
 				(*env)->CallBooleanMethod(env, resultList, addMethodId, createLong(env, props[i].int64Value));
 				break;
@@ -653,7 +653,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1Wait
     	  	  VIX_PROPERTY_NONE);
     	  	break;
     }
-    snprintf(dbgBuffer, 80, "VixJob_Wait invoked returnCode=%d", error);
+    snprintf(dbgBuffer, 80, "VixJob_Wait invoked returnCode=%d", (int) error);
     logDebug(env, dbgBuffer);
 
     if (error!=VIX_OK) {
@@ -742,7 +742,7 @@ JNIEXPORT jint JNICALL Java_net_sf_jvix_VixWrapper_VixSnapshot_1GetNumChildren
     if (error!=VIX_OK) {
         logDebug(env, "VixSnapshot_GetNumChildren thrown exception\n");
         throwVixException(env, error);
-        return (jint) NULL;
+        return (jint) 0;
     } else {
         logDebug(env, "VixSnapshot_GetNumChildren end");
 	    return (jint) numChildSnapshots;
@@ -985,7 +985,7 @@ JNIEXPORT jint JNICALL Java_net_sf_jvix_VixWrapper_VixVM_1GetNumRootSnapshots
     if (error!=VIX_OK) {
    	    logDebug(env, "VixVM_GetNumRootSnapshots thrown exception\n");
    	    throwVixException(env, error);
-        return (jint) NULL;
+        return (jint) 0;
     } else {
 	    logDebug(env, "VixVM_GetNumRootSnapshots end");
 	    return (jint) result;		
@@ -1869,7 +1869,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_VixJob_1GetNthProperties__
     	  	  VIX_PROPERTY_NONE);
     	  	break;
     }
-    snprintf(dbgBuffer, 80, "VixJob_GetNthProperties invoked returnCode=%d", error);
+    snprintf(dbgBuffer, 80, "VixJob_GetNthProperties invoked returnCode=%d", (int) error);
     logDebug(env, dbgBuffer);
 
     if (error!=VIX_OK) {
@@ -1981,7 +1981,7 @@ JNIEXPORT jobject JNICALL Java_net_sf_jvix_VixWrapper_Vix_1GetProperties
     	  	  VIX_PROPERTY_NONE);
     	  	break;
     }
-    snprintf(dbgBuffer, 80, "VixJob_GetProperties invoked returnCode=%d", error);
+    snprintf(dbgBuffer, 80, "VixJob_GetProperties invoked returnCode=%d", (int) error);
     logDebug(env, dbgBuffer);
 
     if (error!=VIX_OK) {
