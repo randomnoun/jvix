@@ -71,7 +71,7 @@
 	
 	<!-- used in build database and release filenames -->
 	<!-- increment this number as soon as a release has been uploaded to sourceforge --> 
-	<property name="jvixReleaseVersion" value="0.2" />
+	<property name="jvixReleaseVersion" value="0.3" />
 	
 	<property name="currentDir" value="${user.dir}" />
 	<property name="increaseBuildNumber" value="false" />
@@ -146,14 +146,14 @@
 	  <mkdir dir="build/emma" />
 	  <mkdir dir="build/junit" />
 	  <mkdir dir="build/dist" />
-      <mkdir dir="build/dll" />
       <mkdir dir="build/lib" />
-	  <mkdir dir="build/exe" />
 	  <mkdir dir="build/bin" />
 	  <mkdir dir="build/h" />
 	  <mkdir dir="build/jar" />
 	  <mkdir dir="build/jni" />
 	  <mkdir dir="build/javadoc" />
+	  <mkdir dir="build/statcvs" />
+	  <mkdir dir="build/doccheck" />
 	</target>
 	
 	<condition property="testIncreaseBuildNumber">
@@ -221,19 +221,22 @@
     </target>
 
     <target name="clean" description="Clean out the ./build directories">
-        <delete dir="build/class" />
-        <delete dir="build/dll" />
+	    <delete dir="build/class" />
+	    <delete dir="build/emma" />
+	    <delete dir="build/junit" />
+	    <delete dir="build/dist" />
         <delete dir="build/lib" />
-    	<delete dir="build/h" />
-    	<delete dir="build/jar" />
-    	<delete dir="build/jni" />
-    	<delete dir="build/javadoc" />
-    	<delete dir="build/exe" />
-    	<delete dir="build/bin" />
+	    <delete dir="build/bin" />
+	    <delete dir="build/h" />
+	    <delete dir="build/jar" />
+	    <delete dir="build/javadoc" />
+	    <delete dir="build/statcvs" />
+	    <delete dir="build/doccheck" />
+	    <delete dir="build/jni" />
     </target>
 
 
-	<target name="buildVixWrapperWin32" depends="_init" description="Create VIX JNI wrapper" unless="testOnLinux">
+	<target name="buildVixWrapperWin32" depends="_init" description="Create VIX JNI wrapper for Win32 platforms" unless="testOnLinux">
       <!-- would be good to statically compile these once I google how to do it -->
 	  <copy file="${vixLibDir}/iconv.dll" tofile="build/jni/iconv.dll"/>
 	  <copy file="${vixCryptoLibDir}/libeay32.dll" tofile="build/jni/libeay32.dll"/>
@@ -277,10 +280,10 @@
 	    <arg value="../../src/c/VixWrapper.c" />
 	    <arg value="${vixLibDir}/vix.dll" />
 	  </exec>
-	  <copy file="build/jni/jvix.dll" tofile="build/dll/jvix.dll"/>
+	  <copy file="build/jni/jvix.dll" tofile="build/lib/jvix.dll"/>
 	</target>
 
-	<target name="buildVixWrapperLinux64" depends="_init" description="Create VIX JNI wrapper" unless="testOnWindows">
+	<target name="buildVixWrapperLinux64" depends="_init" description="Create VIX JNI wrapper for 64-bit Linux platforms" unless="testOnWindows">
 	  <copy file="${vixLibDir}/libvix.so" tofile="build/jni/libvix.so"/>
 	  <exec executable="${jdkDir}\bin\javah" >
   	    <arg value="-classpath" />
@@ -308,12 +311,12 @@
 	  <copy file="build/jni/libjvix.so" tofile="build/lib/libjvix.so"/> 
 	</target>
 	
-	<target name="buildVixWrapper" depends="buildVixWrapperLinux64, buildVixWrapperWin32">
+	<target name="buildVixWrapper" depends="buildVixWrapperLinux64, buildVixWrapperWin32" description="Create VIX JNI wrapper ">
 	</target>
 
 
 	<!-- only really need to build this sleep executable for Win32 if testing on Win32 VMs -->
-	<target name="buildSleepWin32" depends="_init" description="Create the sleep executable" unless="testOnLinux">
+	<target name="buildSleepWin32" depends="_init" description="Create the sleep executable for Win32 platforms" unless="testOnLinux">
       <!-- would be good to statically compile these once I google how to do it -->
 	  <exec executable="${bin.gcc}" 
         dir="build/jni" >
@@ -325,10 +328,10 @@
 	    <arg value="sleep.exe" />
 	    <arg value="../../src/c/sleep.c" />
 	  </exec>
-	  <copy file="build/jni/sleep.exe" tofile="build/exe/sleep.exe"/>
+	  <copy file="build/jni/sleep.exe" tofile="build/bin/sleep.exe"/>
 	</target>
 
-	<target name="buildSleepLinux64" depends="_init" description="Create the sleep executable" unless="testOnWindows">
+	<target name="buildSleepLinux64" depends="_init" description="Create the sleep executable for 64-bit Linux platforms" unless="testOnWindows">
       <!-- would be good to statically compile these once I google how to do it -->
 	  <exec executable="${bin.gcc}" 
         dir="build/jni" >
@@ -340,7 +343,7 @@
 	  <copy file="build/jni/sleep" tofile="build/bin/sleep"/> 
 	</target>
 
-	<target name="buildSleep" depends="buildSleepWin32, buildSleepLinux64">
+	<target name="buildSleep" depends="buildSleepWin32, buildSleepLinux64" description="Create the sleep executable">
 	</target>
 
     <!-- additionalparam="-J-Xss20M -J-Xmx128M" -->
@@ -426,7 +429,8 @@ and then hit "Y"
 		    <arg value="../../doc/README.txt" />
 		    <arg value="../../doc/lgpl-3.0.txt" />
 		    <arg value="../../build/jar/jvix.jar" />
-		    <arg value="../../build/dll/jvix.dll" />
+		    <arg value="../../build/lib/jvix.dll" />
+		    <arg value="../../build/lib/libjvix.so" />
 		</exec>
 		<exec executable="${bin.zip}" dir="build" >
 		    <arg value="-r" />
@@ -435,7 +439,7 @@ and then hit "Y"
 		</exec>
 		<exec executable="${bin.zip}" dir="." >
 		    <arg value="-r" />
-		    <arg value="dist/jvix-${jvixReleaseVersion}-bin.zip" />
+		    <arg value="build/dist/jvix-${jvixReleaseVersion}-bin.zip" />
 			<arg value="lib/runtime" />
 		</exec>
 		
@@ -454,6 +458,8 @@ and then hit "Y"
 		    <arg value="\*CVS\*" />
 		    <arg value="-x" />
 		    <arg value="\*jvixBuild.properties" />
+		    <arg value="-x" />
+		    <arg value="\*knoxg.properties" />
 		</exec>
 	</target>
 
@@ -481,7 +487,7 @@ and then hit "Y"
 	  </junitreport>
 	</target>
 	
-	<target name="emma" depends="buildJvixJar">
+	<target name="emma" depends="buildJvixJar" description="Creates emma coverage reports">
 
 	  <!-- create instrumented jvix classes -->
 	  <emma enabled="true" >
