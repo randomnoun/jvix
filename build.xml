@@ -435,7 +435,7 @@ and then hit "Y"
         </instr>
       </emma>
      
-      <!-- create instrumented jvix classes -->
+      <!-- create instrumented jvix classes
       <copy file="build/jar/jvix.jar" tofile="build/jar/jvix-emma.jar" />
 	  <emma enabled="true" >
         <instr instrpath="build/jar/jvix-emma.jar"
@@ -445,6 +445,8 @@ and then hit "Y"
           <filter includes="net.sf.jvix.*" />
         </instr>
       </emma>
+      -->
+      <echo message="Running unit tests..."/>
       <java classname="net.sf.jvix.test.TestVix" fork="true"
       	dir="build/jni"
         output="${basedir}/build/junit/reports-emma.txt"
