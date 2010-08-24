@@ -12,3 +12,7 @@ To compile, open this project in eclipse, right-click on the build.xml file, sel
 This will create a 'jvix.jar' in the build/jar folder, and a 'jvix.dll' file in the build/dll
 folder. Run the net.sf.jvix.test.TestVixWrapper class to see it in action.
 
+To set locations of system files and libraries specific to your build machine, 
+update the properties files in ./src/resources/properties. You will need to copy and modify one of 
+the supplied property files to have the name "{machineName}-{username}.properties" in the same directory.
+
